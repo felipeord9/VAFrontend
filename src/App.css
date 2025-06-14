@@ -1,0 +1,9 @@
+#wrapper {
+  background-image: /* rgb(22, 150, 235) */url('./assets/fondoVA.png');
+  background-color: rgba(255, 255, 255, 0.7);
+  background-blend-mode: overlay;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-size: 100% 100%;
+  background-position: center;
+}

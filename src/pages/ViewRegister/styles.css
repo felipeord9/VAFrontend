@@ -1,0 +1,51 @@
+.div-botons{
+    display: flex;
+    flex-direction: row;
+    margin-top: 10px;
+    gap: 40px;
+}
+
+.combobox-container {
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.video-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  background-color: black;
+}
+
+.container-input {
+    position: absolute;
+    height: 100%;
+    width: calc(100% - 37px);
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.btn-reg {
+    cursor: pointer;
+    transition: 1s;
+}
+
+@media (max-width: 767px) {
+  .reverse {
+      display: flex;
+      flex-direction: column-reverse !important;
+      height: 100% !important;
+  }
+}
+
+@media (max-width: 900px) {
+    .boton-head{
+      width: 75;
+    }
+    .div-botons{
+        flex-direction: column;
+        gap: 10px;
+    }
+}

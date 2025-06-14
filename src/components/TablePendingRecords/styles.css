@@ -1,0 +1,13 @@
+select option {
+  border-radius: 5;
+}
+
+.table-orders{
+  height: calc(100% - 60px);
+}
+
+@media screen and (max-width: 1060px) {
+  .table-orders{
+    height: calc(92% - 60px);
+  }
+}
