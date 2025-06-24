@@ -245,7 +245,7 @@ export default function FinalVideo() {
                 className="w-full rounded border h-full"
                 height={'100%'}
                 width={'100%'}
-                style={{height: isMobile ? '50vh' : '60vh'}}
+                style={{height: isMobile ? '60vh' : '60vh'}}
               />
             )}
 
@@ -262,7 +262,7 @@ export default function FinalVideo() {
                   controls
                   className="w-full rounded border"
                   
-                  style={{height: isMobile ? '50vh' : '60vh'}}
+                  style={{height: isMobile ? '60vh' : '60vh'}}
                 />
                 <div className={`mt-2 d-flex div-botons justify-content-center ${isMobile ? 'gap-2' : 'gap-4'} `}>
                   <button

@@ -361,9 +361,7 @@ export default function ModalUsers({
                   <option selected disabled value="">
                     -- Seleccione un cargo --
                   </option>
-                  <option value="planta">PLANTA</option>
-                  <option value="logistica">LOGÍSTICA</option>
-                  <option value="calidad">CALIDAD</option>
+                  <option value="usuario">USUARIO</option>
                   {infoUser.role==='admin' && (
                     <option value="admin">ADMINISTRADOR</option>
                   )}

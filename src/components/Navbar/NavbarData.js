@@ -9,21 +9,21 @@ export const NavBarData = [
     path: "/start/record",
     icon: <MdNoteAdd />,
     cName: "nav-text",
-    access: ['admin', 'planta', 'logistica', 'calidad']
+    access: ['admin', 'usuario']
   },
   {
     title: "Registros pendientes",
     path: "/pending/records",
     icon: <MdPendingActions />,
     cName: "nav-text",
-    access: ['admin', 'planta', 'logistica', 'calidad']
+    access: ['admin', 'usuario']
   },
   {
     title: "Registros completos",
     path: "/records/complete",
     icon: <LiaClipboardCheckSolid />,
     cName: "nav-text",
-    access: ['admin','calidad']
+    access: ['admin','usuario']
   },
   /* {
     title: "Grameras",
