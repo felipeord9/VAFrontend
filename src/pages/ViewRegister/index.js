@@ -24,6 +24,7 @@ export default function ViewRegister() {
   const [timerInterval, setTimerInterval] = useState(null);
   const [videoEntrada, setVideoEntrada] = useState('');
   const [videoSalida, setVideoSalida] = useState('');
+  const [videoNovedad, setVideoNovedad] = useState('');
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
@@ -43,20 +44,37 @@ export default function ViewRegister() {
         setLoading(true)
         findOneRecord(id)
         .then(({data})=>{
-          //variables para la consulta de videos
-          const fileEntrada = `videoEntrada_${data.placa}.mp4`
-          const fechaEntrada = new Date(data.initalDate).toISOString().split("T")[0];
-          const fileSalida = `videoSalida_${data.placa}.mp4`
-          const fechaSalida = new Date(data.finalDate).toISOString().split("T")[0];
 
-          //envío de consulta al backend
-          const url = `${config.apiUrl2}/upload/obtener-archivo/${fechaEntrada}/${data.placa}/${fileEntrada}`
-          const url2 = `${config.apiUrl2}/upload/obtener-archivo/${fechaSalida}/${data.placa}/${fileSalida}`;
-          /* const url = `http://localhost:3002/upload/file?folder=${encodeURIComponent(folderEntrada)}&filename=${encodeURIComponent(fileEntrada)}` */
-          /* const url2 = `http://localhost:3002/upload/file?folder=${folderSalida}&filename=${fileSalida}`; */
-          /* const url = `${config.apiUrl2}/uploadMultiple/obtener-archivo/${carpeta}/${archivo}`; */
+          let url;
+          if(data.initalDate !== null){
+            const fileEntrada = `videoEntrada_${data.placa}.mp4`
+            const fechaEntrada = new Date(data.initalDate).toISOString().split("T")[0];
+            url = `${config.apiUrl2}/upload/obtener-archivo/${fechaEntrada}/${data.placa}/${fileEntrada}`
+          }else{
+            url = null
+          }
+
+          let url2;
+          if(data.finalDate){
+            const fileSalida = `videoSalida_${data.placa}.mp4`
+            const fechaSalida = new Date(data.finalDate).toISOString().split("T")[0];
+            url2 = `${config.apiUrl2}/upload/obtener-archivo/${fechaSalida}/${data.placa}/${fileSalida}`;
+          }else{
+            url2 = null
+          }
+
+          let url3;
+          if(data.newsDate){
+            const fileNovedad = `videoNovedad_${data.placa}.mp4`
+            const fechaNovedad = new Date(data.newsDate).toISOString().split("T")[0];
+            url3 = `${config.apiUrl2}/upload/obtener-archivo/${fechaNovedad}/${data.placa}/${fileNovedad}`;
+          }else{
+            url3 = null
+          }
+
           setVideoEntrada(url)
           setVideoSalida(url2)
+          setVideoNovedad(url3)
           setInfo(data)
           setLoading(false)
         })
@@ -129,11 +147,13 @@ export default function ViewRegister() {
                 </div>
               </div>
             </div> 
+
+            {/* Video entrada */}
             <div className='row row-cols-sm-2 mt-1'>
               <label className="fw-bold mt-2" style={{fontSize: isMobile ? 14 : 15}}>{isMobile ? 'Vídeo entrada:' : 'Grabación de vídeo entrada:'}</label>
               <div className='d-flex flex-row'>
                 <label className="fw-bold mt-2" style={{fontSize: isMobile ? 14 : 15}}>Fecha: </label>
-                <label className="mt-2 ms-2" style={{fontSize: isMobile ? 14 : 15, backgroundColor:'whitesmoke'}}>{new Date(info.initalDate).toLocaleString("es-CO")}</label>
+                <label className="mt-2 ms-2" style={{fontSize: isMobile ? 14 : 15, backgroundColor:'whitesmoke'}}>{info.initalDate !== null ? new Date(info.initalDate).toLocaleString("es-CO") : ''}</label>
               </div>
             </div> 
             <div className='d-flex flex-column mt-1' style={{height: isMobile ? '100%' : '60vh'}}>
@@ -148,12 +168,14 @@ export default function ViewRegister() {
               </>
             )}
             </div>
+
+            {/* Video salida */}
             <hr className="my-1 mt-4" />
             <div className='row row-cols-sm-2 mt-1'>
               <label className="fw-bold mt-2" style={{fontSize: isMobile ? 14 : 15}}>{isMobile ? 'Vídeo salida:' : 'Grabación de vídeo salida:'}</label>
               <div className='d-flex flex-row'>
                 <label className="fw-bold mt-2" style={{fontSize: isMobile ? 14 : 15}}>Fecha:</label>
-                <label className="mt-2 ms-2" style={{fontSize: isMobile ? 14 : 15, backgroundColor:'whitesmoke'}}>{new Date(info.finalDate).toLocaleString("es-CO")}</label>
+                <label className="mt-2 ms-2" style={{fontSize: isMobile ? 14 : 15, backgroundColor:'whitesmoke'}}>{info.finalDate !== null ? new Date(info.finalDate).toLocaleString("es-CO") : ''}</label>
               </div>
             </div>
             <div className='d-flex flex-column mt-1' style={{height: isMobile ? '100%' : '60vh'}}>
@@ -168,8 +190,37 @@ export default function ViewRegister() {
               </>
             )}
             </div>
+
+            {/* Video novedades */}
+            <hr className="my-1 mt-4" />
+            <div className='row row-cols-sm-2 mt-1'>
+              <label className="fw-bold mt-2" style={{fontSize: isMobile ? 14 : 15}}>{isMobile ? 'Vídeo novedad:' : 'Grabación de vídeo novedad:'}</label>
+              <div className='d-flex flex-row'>
+                <label className="fw-bold mt-2" style={{fontSize: isMobile ? 14 : 15}}>Fecha:</label>
+                <label className="mt-2 ms-2" style={{fontSize: isMobile ? 14 : 15, backgroundColor:'whitesmoke'}}>{info.newsDate !== null ? new Date(info.newsDate).toLocaleString("es-CO") : ''}</label>
+              </div>
+            </div>
+            {videoNovedad ? (
+            <div className='d-flex flex-column mt-1' style={{height: isMobile ? '100%' : '60vh'}}>
+              <>
+                <video
+                  src={videoNovedad}
+                  controls
+                  className="w-full rounded border"
+                  style={{height: isMobile ? '100%' : '60vh'}}
+                />
+              </>
+              </div>
+              ):
+              <label 
+                className='sm-text text-danger fw-bold w-100 justify-content-center d-flex'
+                style={{
+                  fontSize: isMobile ? 20 : 25
+                }}
+              >NO SE GRABARON NOVEDADES</label>
+            }
             <button
-              onClick={(e)=>navigate('/records/complete')}
+              onClick={(e)=>navigate('/records')}
               className="bg-red-600 btn btn-sm btn-primary text-black px-4 py-2 rounded mt-2"
             >
               ↩️ Salir

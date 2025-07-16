@@ -14,7 +14,7 @@ export default function Login() {
   const { user, setUser } = useContext(AuthContext);
 
   useEffect(() => {
-    if (isLogged) navigate('/pending/records')
+    if (isLogged) navigate('/records')
   }, [isLogged, navigate]);
 
   const handleLogin = async (e) => {
@@ -69,12 +69,12 @@ export default function Login() {
             Usuario o contraseña incorrectos
           </div>
         )}
-        <Link
+        {/* <Link
           to="/enviar/recuperacion"
           className="text-primary text-center text-decoration-none mt-3"
         >
           ¿Olvidó su contraseña?
-        </Link>
+        </Link> */}
       </div>
     </div>
   );

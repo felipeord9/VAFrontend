@@ -5,17 +5,17 @@ import { findOneRecord , updateRecord } from '../../services/recordService';
 import AuthContext from "../../context/authContext";
 import { BsFillSendCheckFill } from "react-icons/bs";
 import { MdOutlineArrowBack } from "react-icons/md";
-import { BiReset } from "react-icons/bi";
 import { sendVideo } from '../../services/videoService';
 import { userLogin } from '../../services/authService';
 import InputPassword from '../../components/InputPassword';
 import { Modal , Button , Form } from "react-bootstrap";
+import { BiReset } from "react-icons/bi";
 import Guia from "../../assets/guia2.png";
 import Guia2 from "../../assets/guia6.png";
 import Swal from 'sweetalert2';
 import './styles.css'
 
-export default function FinalVideo() {
+export default function News() {
   const { user , setUser } = useContext(AuthContext);
   const [recording, setRecording] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -188,7 +188,7 @@ export default function FinalVideo() {
             const formData = new FormData();
             formData.append('video', blob, 'grabacion.webm');
             formData.append('placa', info.placa.toUpperCase());
-            formData.append('concept', 'Salida');
+            formData.append('concept', 'Novedad');
             formData.append('createdAt', new Date().toISOString().split("T")[0]);
         
             await sendVideo(formData)
@@ -197,10 +197,10 @@ export default function FinalVideo() {
               setElapsedTime(0);
           
               const body = {
-                finalVideo: 1,
-                finalCreatedBy: user.name,
-                finalDate: new Date(),
-                status: 'Finalizado'
+                news: 1,
+                newsCreatedBy: user.name,
+                newsDate: new Date(),
+                /* status: 'No realizado' */
               }
           
               updateRecord(info.id, body)
@@ -208,7 +208,7 @@ export default function FinalVideo() {
                 setRecording(false);
                 Swal.fire({
                   title:'¡Felicitades!',
-                  text:'Se ha registrado y guardado el vídeo de salida de manera satisfactoria.',
+                  text:'Se ha registrado y guardado el vídeo de novedad de manera satisfactoria.',
                   showConfirmButton: true,
                   confirmButtonColor:'green',
                 })
@@ -242,12 +242,11 @@ export default function FinalVideo() {
         Swal.fire({
           icon:'warning',
           title:'¡ATENCION!',
-          text:'Por favor graba el vídeo de salida para poder hacer el registro.',
+          text:'Por favor graba el vídeo de entrada para poder hacer el registro.',
           showConfirmButton: true,
           confirmButtonColor:'red',
         })
       }
-  
     };
 
   /* logica del modal */
@@ -314,7 +313,7 @@ export default function FinalVideo() {
         </Modal>
         <div className="d-flex div-botons justify-content-center align-items-center bg-light rounded shadow-sm p-2 pe-2">
           <div className='d-flex flex-column w-100'>
-            <label style={{fontSize: isMobile ? 15 : 22, color: 'rgba(255, 200, 50, 0.8)'}} className='d-flex justify-content-center fw-bold'>COMPLETAR REGISTRO</label>
+            <label style={{fontSize: isMobile ? 15 : 22, color: 'rgba(255, 200, 50, 0.8)'}} className='d-flex justify-content-center fw-bold'>VIDEO NOVEDAD</label>
             <div className='d-flex div-botons mt-1 w-100 gap-2 justify-content-center align-items-center'>
               <div className='justify-content-center align-items-center d-flex flex-column'>
                 <label className="fw-bold">Placa</label>
@@ -331,7 +330,7 @@ export default function FinalVideo() {
                 </div>
               </div>
             </div> 
-            <label className="fw-bold mt-2" style={{fontSize: isMobile ? 14 : 15}}>Grabación de vídeo salida:</label>
+            <label className="fw-bold mt-2" style={{fontSize: isMobile ? 14 : 15}}>Grabación de vídeo novedad:</label>
             <div className='d-flex flex-column' style={{height: isMobile ? '80%' : '60vh'}}>
             {!previewUrl && (
               <video

@@ -1,30 +1,64 @@
 import React from 'react';
 import { useState, useEffect, useContext , useRef } from "react";
-import { createRecord } from '../../services/recordService';
-import { sendVideo } from '../../services/videoService';
+import { useParams , useNavigate } from 'react-router-dom';
+import { findOneRecord , updateRecord } from '../../services/recordService';
 import AuthContext from "../../context/authContext";
 import { BsFillSendCheckFill } from "react-icons/bs";
+import { MdOutlineArrowBack } from "react-icons/md";
+import { sendVideo } from '../../services/videoService';
+import { userLogin } from '../../services/authService';
+import InputPassword from '../../components/InputPassword';
+import { Modal , Button , Form } from "react-bootstrap";
 import { BiReset } from "react-icons/bi";
 import Guia from "../../assets/guia2.png";
 import Guia2 from "../../assets/guia6.png";
-import Swal from "sweetalert2";
+import Swal from 'sweetalert2';
 import './styles.css'
 
 export default function InitialVideo() {
-  const { user } = useContext(AuthContext);
-  const [placa, setPlaca] = useState('');
-  const [firstPart, setFirstPart] = useState('');
-  const [secondPart, setSecondPart] = useState('');
+  const { user , setUser } = useContext(AuthContext);
   const [recording, setRecording] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [timerInterval, setTimerInterval] = useState(null);
-  const [registrando, setRegistrando] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [reject, setReject] = useState(false);
+  const navigate = useNavigate();
+
+  const [info, setInfo] = useState({});
+
+  //constante para guardar el valor del parametro
+  const { id } = useParams();
 
   const videoRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const streamRef = useRef(null);
   const recordedChunks = useRef([]);
+
+  //Logica para traer la info del registro
+  useEffect(() => {
+    if(id){
+      findOneRecord(id)
+      .then(({data})=>{
+        setInfo(data)
+      })
+      .catch(()=>{
+        setInfo({})
+        Swal.fire({
+          icon:'warning',
+          title:'¡ATENCIÓN!',
+          text:'Ha ocurrido un error al momento de abrir el vínculo. Vuelve a intentarlo, si el problema persiste comunícate con el programador.',
+          confirmButtonText:'OK',
+          confirmButtonColor:'red'
+        })
+        .then(()=>{
+          navigate('/records')
+        })
+      })
+    }
+  },[])
 
   //logica para saber si es celular
   const [isMobile, setIsMobile] = useState(false);
@@ -49,6 +83,28 @@ export default function InitialVideo() {
     const s = (sec % 60).toString().padStart(2, '0');
     return `${m}:${s}`;
   };
+
+  /* login autenticación */
+  const handleAutentication = (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    if(email !== '' && password !== ''){
+      userLogin({email, password})
+      .then((data) => {
+        window.localStorage.setItem("token", JSON.stringify(data.token))
+        window.localStorage.setItem("user", JSON.stringify(data.user))
+        setUser(data.user)
+        setIsLoading(false);
+        closeModal();
+        startRecording();
+      })
+      .catch((err)=>{
+        setIsLoading(false);
+        setReject(true);
+        setTimeout(() => setReject(false), 4000)
+      })
+    }
+  }
 
   const startRecording = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -96,124 +152,181 @@ export default function InitialVideo() {
   };
 
   const uploadVideo = async (e) => {
-    e.preventDefault();
-
-    // Muestra la barra de carga
-    let timerInterval;
-    Swal.fire({
-        title: 'Registrando...',
-        text: 'Por favor, espera mientras se registra...',
-        /* timer: 999999999999999,
-        timerProgressBar: true, */
-        allowOutsideClick: false,
-        didOpen: () => {
-            Swal.showLoading();
-            /* Swal.showLoading();
-            const timer = Swal.getPopup().querySelector("b"); */
-            /* timerInterval = setInterval(() => {}, 200); */
-        },
-        willClose: () => {
-            clearInterval(timerInterval);
-        },
-        onBeforeOpen: () => {
-            Swal.showLoading();
-        },
-        showConfirmButton: false,
-    });
-
-    setRecording(true);
-    if(placa !== '' && recordedChunks){
-      const blob = new Blob(recordedChunks.current, { type: 'video/webm' });
-      const formData = new FormData();
-      formData.append('video', blob, 'grabacion.webm');
-      formData.append('placa', placa.toUpperCase());
-      formData.append('concept', 'Entrada');
-      formData.append('createdAt', new Date().toISOString().split("T")[0]);
-  
-      await sendVideo(formData)
-      .then(() =>{
-        setPreviewUrl(null);
-        setElapsedTime(0);
-    
-        const body = {
-          placa: placa.toUpperCase(),
-          initialVideo: 1,
-          initalDate: new Date(),
-          userId: user.id ,
-        }
-    
-        createRecord(body)
-        .then(()=>{
-          setRecording(false);
-          Swal.fire({
-            title:'¡Felicitades!',
-            text:'Se ha registrado y guardado el vídeo de entrada de manera satisfactoria.',
-            showConfirmButton: true,
-            confirmButtonColor:'green',
-          })
-          setPlaca('');
+      e.preventDefault();
+      setRecording(true);
+      if(recordedChunks){
+        Swal.fire({
+          icon:'question',
+          title:'Confirmación',
+          text:'¿Estás segur@ de querer registrar este vídeo?',
+          showConfirmButton:true,
+          confirmButtonColor:'green',
+          confirmButtonText:'Si',
+          showDenyButton: true,
+          denyButtonColor:'red',
         })
-        .catch(()=>{
-          setRecording(false);
-          Swal.fire({
-            title:'¡ERROR!',
-            text:'Ha ocurrido un error al momento de hacer el registro. Intentalo de nuevo. Si el problema persiste comunícate con el programador.',
-            showConfirmButton: true,
-            confirmButtonColor:'green',
-          })
+        .then ( async ({isConfirmed, isDenied})=>{
+          if(isConfirmed){
+            // Muestra la barra de carga
+            let timerInterval;
+            Swal.fire({
+                title: 'Registrando...',
+                text: 'Por favor, espera mientras se registra...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                },
+                willClose: () => {
+                    clearInterval(timerInterval);
+                },
+                onBeforeOpen: () => {
+                    Swal.showLoading();
+                },
+                showConfirmButton: false,
+            });
+            const blob = new Blob(recordedChunks.current, { type: 'video/webm' });
+            const formData = new FormData();
+            formData.append('video', blob, 'grabacion.webm');
+            formData.append('placa', info.placa.toUpperCase());
+            formData.append('concept', 'Entrada');
+            formData.append('createdAt', new Date().toISOString().split("T")[0]);
+        
+            await sendVideo(formData)
+            .then(() =>{
+              setPreviewUrl(null);
+              setElapsedTime(0);
+          
+              const body = {
+                initialVideo: 1,
+                initialCreatedBy: user.name,
+                initalDate: new Date(),
+              }
+          
+              updateRecord(info.id, body)
+              .then(()=>{
+                setRecording(false);
+                Swal.fire({
+                  title:'¡Felicitades!',
+                  text:'Se ha registrado y guardado el vídeo de entrada de manera satisfactoria.',
+                  showConfirmButton: true,
+                  confirmButtonColor:'green',
+                })
+                setInfo({});
+                navigate('/records')
+              })
+              .catch(()=>{
+                setRecording(false);
+                Swal.fire({
+                  title:'¡ERROR!',
+                  text:'Ha ocurrido un error al momento de hacer el registro. Intentalo de nuevo. Si el problema persiste comunícate con el programador.',
+                  showConfirmButton: true,
+                  confirmButtonColor:'green',
+                })
+              })
+            })
+            .catch(()=>{
+              setRecording(false);
+              Swal.fire({
+                icon:'warning',
+                title:'¡ERROR!',
+                text:'Ha ocurrido un error al momento de guarda el vídeo. Intentalo de nuevo. Si el problema persiste comunícate con el programador.',
+                showConfirmButton: true,
+                confirmButtonColor:'red',
+              })
+            })
+          }
         })
-      })
-      .catch(()=>{
+      } else {
         setRecording(false);
         Swal.fire({
           icon:'warning',
-          title:'¡ERROR!',
-          text:'Ha ocurrido un error al momento de guarda el vídeo. Intentalo de nuevo. Si el problema persiste comunícate con el programador.',
+          title:'¡ATENCION!',
+          text:'Por favor graba el vídeo de entrada para poder hacer el registro.',
           showConfirmButton: true,
           confirmButtonColor:'red',
         })
-      })
-    } else {
-      setRecording(false);
-      Swal.fire({
-        icon:'warning',
-        title:'¡ATENCION!',
-        text:'Por favor indicanos la placa y graba el vídeo de entrada para poder hacer el registro.',
-        showConfirmButton: true,
-        confirmButtonColor:'red',
-      })
-    }
+      }
+    };
 
+  /* logica del modal */
+  const [modal, setModal] = useState(false);
+  const closeModal = () => {
+    setEmail('');
+    setPassword('');
+    setModal(false);
+  };
+  const openModal = () => {
+    setModal(true);
   };
 
   return (
     <div className="d-flex flex-column container mt-5">
       <div className="d-flex flex-column gap-2 h-100">
+
+        {/* Modal para la autenticacion */}
+        <Modal show={modal} onHide={closeModal} centered>
+          <Modal.Header closeButton>
+            <Modal.Title className='d-flex justify-content-center w-100 fw-bold' style={{color:'#145a83'}}>Autenticación</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <div
+              className="d-flex flex-column gap-2"
+              style={{ fontSize: 13.5 }}
+              /* onSubmit={handleAutentication} */
+            >
+              <div>
+                <label className="fw-bold">Nombre de usuario</label>
+                <input
+                  type="text"
+                  value={email}
+                  className="form-control form-control-sm shadow-sm"
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <InputPassword
+                  label="Contraseña"
+                  password={password}
+                  setPassword={setPassword}
+                />
+              </div>
+            </div>
+            {reject && (
+              <div className="text-danger text-center mt-2">
+                Usuario o contraseña incorrectos
+              </div>
+            )}
+          </Modal.Body>
+          <Modal.Footer>
+            <div className="w-100 justify-content-center align-items-center d-flex">
+              <button
+                /* type="submit" */
+                className="text-light btn btn-sm mt-2 w-50 justify-content-center rounded-4"
+                style={{ backgroundColor: "#145a83" }}
+                onClick={(e) => handleAutentication(e)}
+              >
+                {isLoading ? 'Ingresando...' : 'Ingresar'} 
+              </button>
+            </div>
+          </Modal.Footer>
+        </Modal>
         <div className="d-flex div-botons justify-content-center align-items-center bg-light rounded shadow-sm p-2 pe-2">
           <div className='d-flex flex-column w-100'>
-            <label style={{fontSize: isMobile ? 15 : 22, color: 'red'}} className='d-flex justify-content-center fw-bold'>NUEVO REGISTRO</label>
+            <label style={{fontSize: isMobile ? 15 : 22, color: 'rgba(255, 200, 50, 0.8)'}} className='d-flex justify-content-center fw-bold'>COMPLETAR REGISTRO</label>
             <div className='d-flex div-botons mt-1 w-100 gap-2 justify-content-center align-items-center'>
               <div className='justify-content-center align-items-center d-flex flex-column'>
                 <label className="fw-bold">Placa</label>
                 <div className='d-flex'>
                   <input
                     type="text"
-                    value={placa}
+                    value={info.placa}
                     className="form-control form-control-sm shadow-sm"
-                    onChange={(e) => setPlaca(e.target.value)}
                     style={{textTransform:'uppercase'}}
                     placeholder='Eje: ABC000'
+                    disabled
                     required
                   />
-                  {/* <label className='mt-1 ms-2 me-2'>-</label>
-                  <input
-                    type="text"
-                    value={secondPart}
-                    className="form-control form-control-sm shadow-sm"
-                    onChange={(e) => setSecondPart(e.target.value)}
-                    placeholder='Eje: 000'
-                    required
-                  /> */}
                 </div>
               </div>
             </div> 
@@ -250,10 +363,10 @@ export default function InitialVideo() {
                 />
                 <div className={`mt-2 d-flex div-botons justify-content-center ${isMobile ? 'gap-2' : 'gap-4'} `}>
                   <button
-                    onClick={(e) => uploadVideo(e)}
+                    onClick={uploadVideo}
                     className="bg-green-600 btn btn-sm btn-success text-black px-4 py-2 rounded"
                   >
-                    {registrando ? 'Registrando...' : '📤 Enviar al servidor'} 
+                    📤 Enviar al servidor
                   </button>
                   <button
                     onClick={() => {
@@ -269,12 +382,20 @@ export default function InitialVideo() {
             )}
 
             {!recording && !previewUrl && (
-              <button
-                onClick={startRecording}
-                className="bg-blue-600 btn btn-sm btn-primary text-black px-6 py-2 rounded mt-4"
-              >
-                ▶️ Iniciar grabación
-              </button>
+              <div className={`mt-2 d-flex div-botons justify-content-center ${isMobile ? 'gap-2' : 'gap-4'} `}>
+                <button
+                  onClick={(e)=>openModal(e)}
+                  className="bg-blue-600 btn btn-sm btn-primary text-black px-4 py-2 rounded"
+                >
+                  ▶️ Iniciar grabación
+                </button>
+                <button
+                  onClick={(e)=>navigate('/records')}
+                  className="bg-red-600 btn btn-sm btn-danger text-black px-4 py-2 rounded"
+                >
+                  ↩️ Salir
+                </button>
+              </div>
             )}
 
             {recording && (

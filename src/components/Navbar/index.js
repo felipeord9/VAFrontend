@@ -9,6 +9,9 @@ import { MdQrCodeScanner } from "react-icons/md";
 import { Modal, Button } from "react-bootstrap";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import Logo from "../../assets/AVRecortado.png";
+import { MdNoteAdd } from "react-icons/md";
+import { createRecord } from "../../services/recordService";
+import Swal from "sweetalert2";
 import "./styles.css";
 
 export default function Navbar() {
@@ -17,6 +20,8 @@ export default function Navbar() {
   const { user, setUser } = useContext(AuthContext);
   const navigate = useNavigate();
   const [ruta, setRuta] = useState('');
+  const [recording, setRecording] = useState(false);
+  const [placa, setPlaca] = useState('');
 
   const handleClickImg = (e) => {
     if(user.role==='aprobador'){
@@ -30,6 +35,23 @@ export default function Navbar() {
     setRuta(window.location.pathname);
   }, []);
 
+  //logica para saber si es celular
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 900); // Establecer a true si la ventana es menor o igual a 768px
+    };
+
+    // Llama a handleResize al cargar y al cambiar el tamaño de la ventana
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Llama a handleResize inicialmente para establecer el estado correcto
+
+    // Elimina el event listener cuando el componente se desmonta
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
   //logica del modal con el scanner
   const [showModal, setShowModal] = useState(false);
   const scannerRef = useRef(null);
@@ -39,53 +61,45 @@ export default function Navbar() {
   const handleCloseModal  = () => {
     setShowModal(false)
   }
-  //logica para abrir el scanner cuando se abra el modal
-  useEffect(() => {
-    if (showModal) {
-      const config = {
-        fps: 10, // Frames per second
-        qrbox: { width: 250, height: 250 }, // Scanning area size
-        
-      };
-      // Personalizar los textos del escáner
-      const updateLabelsToSpanish = () => {
-        const startScanningButton = document.querySelector(".html5-qrcode-button-camera-start");
-        const stopScanningButton = document.querySelector(".html5-qrcode-button-camera-stop");
-        const cameraPermissionText = document.querySelector(".html5-qrcode-camera-permission-text");
-        const cameraUnavailableText = document.querySelector(".html5-qrcode-camera-setup-text");
 
-        if (startScanningButton) startScanningButton.innerText = "Iniciar escaneo";
-        if (stopScanningButton) stopScanningButton.innerText = "Detener escaneo";
-        if (cameraPermissionText) cameraPermissionText.innerText = "Por favor, permita el acceso a la cámara.";
-        if (cameraUnavailableText) cameraUnavailableText.innerText = "Cámara no disponible. Verifique su configuración.";
-      };
-
-      const scanner = new Html5QrcodeScanner("qr-reader", config, false);
-
-      scanner.render(
-        (decodedText) => {
-          handleCloseModal(); // Close the modal after scanning
-          scanner.clear(); // Clear the scanner
-          window.location.href = decodedText;
-        },
-        (error) => {
-          console.warn(error);
-        }
-      );
-      
-      // Modificar textos al español después de renderizar
-      setTimeout(updateLabelsToSpanish, 500); // Esperar a que se renderice la interfaz
-      
-      scannerRef.current = scanner;
-    }
-
-    // Cleanup on modal close or component unmount
-    return () => {
-      if (scannerRef.current) {
-        scannerRef.current.clear();
+  /* constantes para el modal nuevo registro */
+  const [showModalNew, setShowModalNew] = useState(false);
+  const closeModalNew = () => {
+    setShowModalNew(false);
+  };
+  const openModalNew = (number) => {
+    setShowModalNew(true);
+  };
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setRecording(true);
+    if(placa !== ''){
+      const body = {
+        placa: placa.toUpperCase(),
+        status: 'En proceso',
       }
-    };
-  }, [showModal]);
+      createRecord(body)
+      .then(()=>{
+        setRecording(false);
+        Swal.fire({
+          title:'¡Felicitades!',
+          text:'Se ha hecho el registro de manera satisfactoria.',
+          showConfirmButton: true,
+          confirmButtonColor:'green',
+        })
+        setPlaca('');
+      })
+      .catch(()=>{
+        setRecording(false);
+        Swal.fire({
+          title:'¡ERROR!',
+          text:'Ha ocurrido un error al momento de hacer el registro. Intentalo de nuevo. Si el problema persiste comunícate con el programador.',
+          showConfirmButton: true,
+          confirmButtonColor:'red',
+        })
+      })
+    }
+  }
 
   return (
     <>
@@ -94,19 +108,41 @@ export default function Navbar() {
           className="position-fixed shadow w-100"
           style={{ fontSize: 11, left: 0, height: "50px", zIndex: 2 , backgroundColor:'#145a83' }}
         >
-          <Modal show={showModal} onHide={handleCloseModal} centered>
-            <Modal.Header closeButton>
-              <Modal.Title>Escanear Código QR</Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-              <div id="qr-reader" style={{ width: "100%", textAlign: "center" }}></div>
-            </Modal.Body>
-            <Modal.Footer>
-              <Button variant="danger" onClick={handleCloseModal}>
-                Cerrar
-              </Button>
-            </Modal.Footer>
-          </Modal>
+
+          {/* Modal de nuevo registro */}
+            <Modal show={showModalNew} onHide={closeModalNew} centered>
+              <Modal.Header closeButton>
+                <Modal.Title
+                  className='d-flex w-100 justify-content-center'
+                  style={{
+                    color:'#145a83'
+                  }}
+                >Nuevo registro</Modal.Title>
+              </Modal.Header>
+              <Modal.Body>
+                <label>Para llevar a cabo el nuevo registro debes ingresar la placa a continuación:</label>
+                <div className='d-flex w-100 justify-content-center mt-1'>
+                  <input
+                    type="text"
+                    value={placa}
+                    className="form-control form-control-sm shadow-sm"
+                    onChange={(e) => setPlaca(e.target.value)}
+                    style={{textTransform:'uppercase', width: isMobile ? '100%' : '50%'}}
+                    placeholder='Eje: ABC000'
+                    required
+                  />
+                </div>
+              </Modal.Body>
+              <Modal.Footer>
+                <Button variant="success" onClick={(e)=>handleSubmit(e)}>
+                  {recording ? 'REGISTRANDO...' : 'Registrar'} 
+                </Button>
+                <Button variant="danger" onClick={closeModalNew}>
+                  Cerrar
+                </Button>
+              </Modal.Footer>
+            </Modal>
+
           <div className="d-flex flex-row justify-content-between align-items-center w-100 h-100 px-3 shadow">
             <div
               id="logo-header"
@@ -116,6 +152,8 @@ export default function Navbar() {
                 src={Logo}
                 width={100}
                 alt=""
+                onClick={(e)=> navigate('/records')}
+                style={{ cursor: "pointer" }}
               />
             </div>
 
@@ -139,14 +177,17 @@ export default function Navbar() {
               onClick={(e) => setShowSidebar(!showSideBar)}
               style={{userSelect:'none'}}
             >
-              {/* <li className="nav-text">
-                <Link
-                  onClick={(e)=>openModal(e)}  
-                >
-                  <MdQrCodeScanner />
-                  <span>Scannear Código QR</span>
-                </Link>
-              </li> */}
+              {(user.role === 'admin' || user.role === 'supervisor') &&
+                <li className="nav-text">
+                  <Link
+                    onClick={(e)=>openModalNew(e)}  
+                    style={{backgroundColor: 'transparent', color: 'white'}}
+                  >
+                    <MdNoteAdd />
+                    <span>Nuevo registro</span>
+                  </Link>
+                </li>
+              }
               {NavBarData.map((item, index) => {
                 if (item.access.includes(user.role)) {
                   return (
