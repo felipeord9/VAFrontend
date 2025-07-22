@@ -25,6 +25,7 @@ export default function News() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [reject, setReject] = useState(false);
+  const [reasonNews, setReasonNews] = useState('');
   const navigate = useNavigate();
 
   const [info, setInfo] = useState({});
@@ -154,95 +155,107 @@ export default function News() {
   const uploadVideo = async (e) => {
       e.preventDefault();
       setRecording(true);
-      if(recordedChunks){
-        Swal.fire({
-          icon:'question',
-          title:'Confirmación',
-          text:'¿Estás segur@ de querer registrar este vídeo?',
-          showConfirmButton:true,
-          confirmButtonColor:'green',
-          confirmButtonText:'Si',
-          showDenyButton: true,
-          denyButtonColor:'red',
-        })
-        .then ( async ({isConfirmed, isDenied})=>{
-          if(isConfirmed){
-            // Muestra la barra de carga
-            let timerInterval;
-            Swal.fire({
-                title: 'Registrando...',
-                text: 'Por favor, espera mientras se registra...',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                },
-                willClose: () => {
-                    clearInterval(timerInterval);
-                },
-                onBeforeOpen: () => {
-                    Swal.showLoading();
-                },
-                showConfirmButton: false,
-            });
-            const blob = new Blob(recordedChunks.current, { type: 'video/webm' });
-            const formData = new FormData();
-            formData.append('video', blob, 'grabacion.webm');
-            formData.append('placa', info.placa.toUpperCase());
-            formData.append('concept', 'Novedad');
-            formData.append('createdAt', new Date().toISOString().split("T")[0]);
-        
-            await sendVideo(formData)
-            .then(() =>{
-              setPreviewUrl(null);
-              setElapsedTime(0);
+      if(reasonNews !== ''){
+        if(recordedChunks){
+          Swal.fire({
+            icon:'question',
+            title:'Confirmación',
+            text:'¿Estás segur@ de querer registrar este vídeo?',
+            showConfirmButton:true,
+            confirmButtonColor:'green',
+            confirmButtonText:'Si',
+            showDenyButton: true,
+            denyButtonColor:'red',
+          })
+          .then ( async ({isConfirmed, isDenied})=>{
+            if(isConfirmed){
+              // Muestra la barra de carga
+              let timerInterval;
+              Swal.fire({
+                  title: 'Registrando...',
+                  text: 'Por favor, espera mientras se registra...',
+                  allowOutsideClick: false,
+                  didOpen: () => {
+                      Swal.showLoading();
+                  },
+                  willClose: () => {
+                      clearInterval(timerInterval);
+                  },
+                  onBeforeOpen: () => {
+                      Swal.showLoading();
+                  },
+                  showConfirmButton: false,
+              });
+              const blob = new Blob(recordedChunks.current, { type: 'video/webm' });
+              const formData = new FormData();
+              formData.append('video', blob, 'grabacion.webm');
+              formData.append('placa', info.placa.toUpperCase());
+              formData.append('concept', 'Novedad');
+              formData.append('createdAt', new Date().toISOString().split("T")[0]);
           
-              const body = {
-                news: 1,
-                newsCreatedBy: user.name,
-                newsDate: new Date(),
-                /* status: 'No realizado' */
-              }
-          
-              updateRecord(info.id, body)
-              .then(()=>{
-                setRecording(false);
-                Swal.fire({
-                  title:'¡Felicitades!',
-                  text:'Se ha registrado y guardado el vídeo de novedad de manera satisfactoria.',
-                  showConfirmButton: true,
-                  confirmButtonColor:'green',
+              await sendVideo(formData)
+              .then(() =>{
+                setPreviewUrl(null);
+                setElapsedTime(0);
+            
+                const body = {
+                  news: 1,
+                  newsCreatedBy: user.name,
+                  newsDate: new Date(),
+                  reasonNews: reasonNews.toUpperCase()
+                  /* status: 'No realizado' */
+                }
+            
+                updateRecord(info.id, body)
+                .then(()=>{
+                  setRecording(false);
+                  Swal.fire({
+                    title:'¡Felicitades!',
+                    text:'Se ha registrado y guardado el vídeo de novedad de manera satisfactoria.',
+                    showConfirmButton: true,
+                    confirmButtonColor:'green',
+                  })
+                  setInfo({});
+                  navigate('/records')
                 })
-                setInfo({});
-                navigate('/records')
+                .catch(()=>{
+                  setRecording(false);
+                  Swal.fire({
+                    title:'¡ERROR!',
+                    text:'Ha ocurrido un error al momento de hacer el registro. Intentalo de nuevo. Si el problema persiste comunícate con el programador.',
+                    showConfirmButton: true,
+                    confirmButtonColor:'green',
+                  })
+                })
               })
               .catch(()=>{
                 setRecording(false);
                 Swal.fire({
+                  icon:'warning',
                   title:'¡ERROR!',
-                  text:'Ha ocurrido un error al momento de hacer el registro. Intentalo de nuevo. Si el problema persiste comunícate con el programador.',
+                  text:'Ha ocurrido un error al momento de guarda el vídeo. Intentalo de nuevo. Si el problema persiste comunícate con el programador.',
                   showConfirmButton: true,
-                  confirmButtonColor:'green',
+                  confirmButtonColor:'red',
                 })
               })
-            })
-            .catch(()=>{
-              setRecording(false);
-              Swal.fire({
-                icon:'warning',
-                title:'¡ERROR!',
-                text:'Ha ocurrido un error al momento de guarda el vídeo. Intentalo de nuevo. Si el problema persiste comunícate con el programador.',
-                showConfirmButton: true,
-                confirmButtonColor:'red',
-              })
-            })
-          }
-        })
-      } else {
+            }
+          })
+        } else {
+          setRecording(false);
+          Swal.fire({
+            icon:'warning',
+            title:'¡ATENCION!',
+            text:'Por favor graba el vídeo de entrada para poder hacer el registro.',
+            showConfirmButton: true,
+            confirmButtonColor:'red',
+          })
+        }
+      }else{
         setRecording(false);
         Swal.fire({
           icon:'warning',
           title:'¡ATENCION!',
-          text:'Por favor graba el vídeo de entrada para poder hacer el registro.',
+          text:'Por favor agregar un motivo especificando la novedad para poder hacer el registro.',
           showConfirmButton: true,
           confirmButtonColor:'red',
         })
@@ -330,6 +343,16 @@ export default function News() {
                 </div>
               </div>
             </div> 
+            <div className="d-flex flex-column mb-1 mt-2">
+              <label className="fw-bold">MOTIVO DE LA NOVEDAD</label>
+              <textarea
+                id="observations"
+                className="form-control"
+                value={reasonNews}
+                onChange={(e)=>setReasonNews(e.target.value)}
+                style={{ minHeight: 70, maxHeight: 100, fontSize: 12 , textTransform:'uppercase'}}
+              ></textarea>
+            </div>
             <label className="fw-bold mt-2" style={{fontSize: isMobile ? 14 : 15}}>Grabación de vídeo novedad:</label>
             <div className='d-flex flex-column' style={{height: isMobile ? '80%' : '60vh'}}>
             {!previewUrl && (

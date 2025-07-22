@@ -218,15 +218,91 @@ export default function Records() {
   };  
 
   // Función para aplicar estilos a los títulos
-  const applyStylesToHeaders = (worksheet) => {
-    const headerCells = ['A1', 'B1', 'C1', 'D1', 'E1', 'F1', 'G1', 'H1', 'I1']; // Celdas de los encabezados
-    headerCells.forEach((cell) => {
-      worksheet[cell].s = {
-        font: { bold: true }, // Texto en negrita
-        fill: { fgColor: { rgb: 'D3D3D3' } }, // Fondo gris claro
+  const applyStylesToHeaders = (worksheet, data) => {
+    const range = XLSX.utils.decode_range(worksheet["!ref"]);
+    const headers = Object.keys(data[0]);
+
+    // Estilos para celdas de encabezado
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      const cellAddress = XLSX.utils.encode_cell({ r: 0, c: C });
+      if (!worksheet[cellAddress]) continue;
+
+      worksheet[cellAddress].s = {
+        font: { bold: true },
+        alignment: { horizontal: "center" },
+        fill: { fgColor: { rgb: "DCE6F1" } }, // Fondo azul claro
+      };
+    }
+
+    // Ancho dinámico para columnas
+    const columnWidths = headers.map((key) => {
+      const maxContent = Math.max(
+        key.length,
+        ...data.map((row) => (row[key] ? row[key].toString().length : 0))
+      );
+      return { wch: maxContent + 2 };
+    });
+
+    worksheet["!cols"] = columnWidths;
+  };
+
+  // Lógica para calcular duración entre fechas
+  const handleDuration = (row) => {
+    if (row.initalDate !== null && row.finalDate !== null) {
+      const inicio = new Date(row.initalDate.replace(" ", "T"));
+      const fin = new Date(row.finalDate.replace(" ", "T"));
+      const diferenciaMs = fin - inicio;
+      let totalSeconds = Math.floor(diferenciaMs / 1000);
+      const hours = Math.floor(totalSeconds / 3600);
+      totalSeconds %= 3600;
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+
+      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    } else {
+      return "";
+    }
+  };
+
+  // Lógica para exportar la tabla a un Excel
+  const exportToExcel = (data) => {
+    const filteredData = data.map((item) => {
+      const placa = item?.placa?.toUpperCase();
+      const status = item?.status?.toUpperCase();
+      const initalDate = item.initalDate !== null ? new Date(item?.initalDate).toLocaleString("es-CO") : '';
+      const initialCreatedBy = item?.initialCreatedBy;
+      const newsDate = item.newsDate !== null ? new Date(item?.newsDate).toLocaleString("es-CO") : '';
+      const newsCreatedBy = item?.newsCreatedBy;
+      const finalDate = item.finalDate !== null ? new Date(item?.finalDate).toLocaleString("es-CO") : '';
+      const finalCreatedBy = item?.finalCreatedBy;
+      const duracion = handleDuration(item);
+
+      return {
+        'Placa': placa,
+        'Estado': status,
+        'Fecha Inicio': initalDate,
+        'Instalador Inicio': initialCreatedBy,
+        'Fecha Novedad': newsDate,
+        'Instalador Novedad': newsCreatedBy,
+        'Fecha Final': finalDate,
+        'Instalador Final': finalCreatedBy,
+        'Duración': duracion,
       };
     });
+
+    const worksheet = XLSX.utils.json_to_sheet(filteredData);
+    applyStylesToHeaders(worksheet, filteredData);
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Datos");
+
+    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array", cellStyles: true });
+    const dataBlob = new Blob([excelBuffer], { type: "application/octet-stream" });
+
+    const filename = `VARecords_Reporte ${new Date().getDate()}-${new Date().getMonth() + 1}-${new Date().getFullYear()}`;
+    saveAs(dataBlob, `${filename}.xlsx`);
   };
+
 
   return (
     <div className="d-flex flex-column container mt-5">
@@ -341,6 +417,16 @@ export default function Records() {
                 <FaIcons.FaFilter className='mt-1 me-1'/>
                 Filtrar
               </button>
+              {(user.role === 'admin' || user.role === 'supervisor') &&
+                <button 
+                  className='btn btn-sm btn-success d-flex justify-content-center' 
+                  style={{width:isMobile ? '100%':'50%'}}
+                  onClick={() => exportToExcel(suggestions)}
+                >
+                  <SiMicrosoftexcel className='mt-1 me-1'/>
+                  Exportar
+                </button>
+              }
               {(user.role === 'admin' || user.role === 'supervisor') &&
                 <button 
                   className='btn btn-sm btn-danger d-flex justify-content-center' 
