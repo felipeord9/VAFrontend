@@ -32,6 +32,11 @@
     transition: 1s;
 }
 
+.text-view{
+    display: flex;
+    flex-direction: row;
+}
+
 @media (max-width: 767px) {
   .reverse {
       display: flex;
@@ -47,5 +52,8 @@
     .div-botons{
         flex-direction: column;
         gap: 10px;
+    }
+    .text-view{
+        flex-direction: column;
     }
 }

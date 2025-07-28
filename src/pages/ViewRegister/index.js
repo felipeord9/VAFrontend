@@ -151,9 +151,9 @@ export default function ViewRegister() {
             {/* Video entrada */}
             <div className='row row-cols-sm-2 mt-1'>
               <label className="fw-bold mt-2" style={{fontSize: isMobile ? 14 : 15}}>{isMobile ? 'Vídeo entrada:' : 'Grabación de vídeo entrada:'}</label>
-              <div className='d-flex flex-row'>
+              <div className='text-view'>
                 <label className="fw-bold mt-2" style={{fontSize: isMobile ? 14 : 15}}>Fecha: </label>
-                <label className="mt-2 ms-2" style={{fontSize: isMobile ? 14 : 15, backgroundColor:'whitesmoke'}}>{info.initalDate !== null ? new Date(info.initalDate).toLocaleString("es-CO") : ''}</label>
+                <label className="ms-1 mt-2" style={{fontSize: isMobile ? 14 : 15, backgroundColor:'whitesmoke'}}>{info.initalDate !== null ? new Date(info.initalDate).toLocaleString("es-CO") : ''}</label>
               </div>
             </div> 
             <div className='d-flex flex-column mt-1' style={{height: isMobile ? '100%' : '60vh'}}>
@@ -173,9 +173,9 @@ export default function ViewRegister() {
             <hr className="my-1 mt-4" />
             <div className='row row-cols-sm-2 mt-1'>
               <label className="fw-bold mt-2" style={{fontSize: isMobile ? 14 : 15}}>{isMobile ? 'Vídeo salida:' : 'Grabación de vídeo salida:'}</label>
-              <div className='d-flex flex-row'>
+              <div className='text-view'>
                 <label className="fw-bold mt-2" style={{fontSize: isMobile ? 14 : 15}}>Fecha:</label>
-                <label className="mt-2 ms-2" style={{fontSize: isMobile ? 14 : 15, backgroundColor:'whitesmoke'}}>{info.finalDate !== null ? new Date(info.finalDate).toLocaleString("es-CO") : ''}</label>
+                <label className="ms-1 mt-2" style={{fontSize: isMobile ? 14 : 15, backgroundColor:'whitesmoke'}}>{info.finalDate !== null ? new Date(info.finalDate).toLocaleString("es-CO") : ''}</label>
               </div>
             </div>
             <div className='d-flex flex-column mt-1' style={{height: isMobile ? '100%' : '60vh'}}>
@@ -195,10 +195,14 @@ export default function ViewRegister() {
             <hr className="my-1 mt-4" />
             <div className='row row-cols-sm-2 mt-1'>
               <label className="fw-bold mt-2" style={{fontSize: isMobile ? 14 : 15}}>{isMobile ? 'Vídeo novedad:' : 'Grabación de vídeo novedad:'}</label>
-              <div className='d-flex flex-row'>
+              <div className='text-view'>
                 <label className="fw-bold mt-2" style={{fontSize: isMobile ? 14 : 15}}>Fecha:</label>
-                <label className="mt-2 ms-2" style={{fontSize: isMobile ? 14 : 15, backgroundColor:'whitesmoke'}}>{info.newsDate !== null ? new Date(info.newsDate).toLocaleString("es-CO") : ''}</label>
+                <label className="ms-1 mt-2" style={{fontSize: isMobile ? 14 : 15, backgroundColor:'whitesmoke'}}>{info.newsDate !== null ? new Date(info.newsDate).toLocaleString("es-CO") : ''}</label>
               </div>
+              <div className='text-view'>
+                <label className="fw-bold mt-2" style={{fontSize: isMobile ? 14 : 15}}>Razón novedad:</label>
+                <label className="ms-1 mt-2" style={{fontSize: isMobile ? 14 : 15, backgroundColor:'whitesmoke'}}>{info.reasonNews !== null ? info.reasonNews : ''}</label>
+              </div>            
             </div>
             {videoNovedad ? (
             <div className='d-flex flex-column mt-1' style={{height: isMobile ? '100%' : '60vh'}}>

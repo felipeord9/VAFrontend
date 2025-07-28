@@ -290,7 +290,14 @@ function TableRecords({ records, getAllRecords, loading }) {
     },
     {
       id: "motivo",
-      name: "Motivo",
+      name: "Motivo Novedad",
+      selector: (row) => row?.reasonNews,
+      sortable: true,
+      width: '500px'
+    },
+    {
+      id: "motivo",
+      name: "Motivo No Realización",
       selector: (row) => row?.motivo,
       sortable: true,
       width: '500px'
