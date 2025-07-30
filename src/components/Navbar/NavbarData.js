@@ -3,6 +3,7 @@ import { LiaClipboardCheckSolid } from "react-icons/lia";
 import { MdPendingActions } from "react-icons/md";
 import { MdNoteAdd } from "react-icons/md";
 import { FaClipboardList } from "react-icons/fa";
+import { MdOutgoingMail } from "react-icons/md";
 
 export const NavBarData = [ 
   /* {
@@ -33,6 +34,13 @@ export const NavBarData = [
     cName: "nav-text",
     access: ['admin','usuario']
   }, */
+  {
+    title: "Mail Qr",
+    path: "/qr/mail",
+    icon: <MdOutgoingMail />,
+    cName: "nav-text",
+    access: ['admin', 'supervisor']
+  },
   {
     title: "Usuarios",
     path: "/usuarios",

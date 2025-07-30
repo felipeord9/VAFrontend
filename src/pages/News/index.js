@@ -107,6 +107,24 @@ export default function News() {
     }
   }
 
+  const enableTorch = async (stream) => {
+    const track = stream.getVideoTracks()[0];
+    const capabilities = track.getCapabilities();
+
+    if (capabilities.torch) {
+      try {
+        await track.applyConstraints({
+          advanced: [{ torch: true }],
+        });
+        console.log("Flash activado");
+      } catch (e) {
+        console.error("Error al activar el flash:", e);
+      }
+    } else {
+      console.warn("El dispositivo no soporta flash/torch.");
+    }
+  };
+
   const startRecording = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { 
@@ -119,6 +137,9 @@ export default function News() {
 
     streamRef.current = stream;
     videoRef.current.srcObject = stream;
+
+    // Intenta activar el flash
+    enableTorch(stream);
 
     mediaRecorderRef.current = new MediaRecorder(stream);
     recordedChunks.current = [];
@@ -287,7 +308,7 @@ export default function News() {
               style={{ fontSize: 13.5 }}
               /* onSubmit={handleAutentication} */
             >
-              <div>
+              {/* <div>
                 <label className="fw-bold">Nombre de usuario</label>
                 <input
                   type="text"
@@ -296,6 +317,47 @@ export default function News() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                 />
+              </div> */}
+              <div className="d-flex flex-column align-items-start">
+                <label className="fw-bold">Nombre de usuario</label>
+                <select
+                  className="form-select form-select-sm w-100"
+                  value={email}
+                  id="email"
+                  required
+                  onChange={(e) => setEmail(e.target.value)}
+                >
+                  <option selected value="" disabled>
+                    -- Seleccione el usuario --
+                  </option>
+                  <option id="alexis.sanchez" value="alexis.sanchez">
+                    ALEXIS SANCHEZ
+                  </option>
+                  <option id="dairo.castaño" value="dairo.castaño">
+                    DARIO CASTAÑO
+                  </option>
+                  <option id="diego.rosero" value="diego.rosero">
+                    DIEGO ROSERO
+                  </option>
+                  <option id="hector.obando" value="hector.obando">
+                    HECTOR OBANDO
+                  </option>
+                  <option id="hermes.motta" value="hermes.motta">
+                    HERMES MOTTA
+                  </option>
+                  <option id="ivan.castillo" value="ivan.castillo">
+                    IVAN CASTILLO
+                  </option>
+                  <option id="luis.aguas" value="luis.aguas">
+                    LUIS AGUAS
+                  </option>
+                  <option id="paul.botero" value="paul.botero">
+                    PAUL BOTERO
+                  </option>
+                  <option id="jonathan.echavarria" value="jonathan.echavarria">
+                    JONATHAN ECHAVARRIA
+                  </option>
+                </select>
               </div>
               <div>
                 <InputPassword

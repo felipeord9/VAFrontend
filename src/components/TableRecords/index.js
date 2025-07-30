@@ -35,7 +35,9 @@ function TableRecords({ records, getAllRecords, loading }) {
   const handleRowClicked = (row) => {
     setSelectedRow(row);
     if(row.initialVideo && row.finalVideo){
-      navigate(`/view/register/${row.id}`)
+      if(user.role === 'admin' || user.role === 'supervisor'){
+        navigate(`/view/register/${row.id}`)
+      }
     }else if(row.initialVideo && row.finalVideo === null){
       navigate(`/end/record/${row.id}`)
     }else if(row.status === 'No realizado'){

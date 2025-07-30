@@ -13,7 +13,7 @@ import PendigRecords from './pages/PendingRecords';
 import RecordsComplete from './pages/RecordsComplete';
 import InitialVideo from './pages/InitialVideo';
 import FinalVideo from './pages/FinalVideo';
-
+import QrMail from './pages/QrMail';
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
 import ViewRegister from './pages/ViewRegister';
@@ -44,7 +44,7 @@ function App() {
               <Route path='/records' element={<PrivateRoute component={Records} />} />
               <Route path='/records/complete' element={<PrivateRoute component={RecordsComplete} />} />
               <Route path='/view/register/:id' element={<PrivateRoute component={ViewRegister} />} />
-
+              <Route path='/qr/mail' element={<PrivateRoute component={QrMail} />} />
             </Routes>
           </div>
         </Router>

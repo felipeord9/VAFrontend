@@ -29,6 +29,19 @@ export const sendVideo = async(formData) =>{
   }
 }
 
+export const sendVideoQr = async(formData) =>{
+  try {
+    const {data}= await axios.post(`${url}/qr/record`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
 export const getVideo = async () => {
   const token = JSON.parse(localStorage.getItem("token"))
   const { data } = await axios.get(`${url}/file`, {
