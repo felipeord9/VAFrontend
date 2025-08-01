@@ -10,12 +10,10 @@ import { findOneRecord } from '../../services/recordService';
 import { Modal } from "react-bootstrap";
 import { config } from '../../config';
 import Swal from 'sweetalert2';
-import { BsEnvelopeAtFill } from "react-icons/bs";
-import { sendVideoEvidence } from '../../services/videoService';
 import './styles.css'
 
 
-export default function ViewRegister() {
+export default function PreviewRegister() {
   const { user } = useContext(AuthContext);
   const [placa, setPlaca] = useState('');
   const [firstPart, setFirstPart] = useState('');
@@ -127,131 +125,6 @@ export default function ViewRegister() {
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
-  const sendEvidence = (e) => {
-    e.preventDefault();
-    const { id } = e.target;
-    Swal.fire({
-      input: "email",
-      inputLabel: "Correo de destino",
-      inputPlaceholder:
-        "Ingrese aquí el correo de destino",
-      inputAttributes: {
-        "aria-label": "Ingrese la nota acá.",
-      },
-      inputValidator: (value) => {
-        if (!value) {
-          return "¡En necesario escribir algo!";
-        }else if(!value.includes('@') || !value.split('@')[1].includes('.')){
-          return "¡Correo inválido!";
-        }
-      },
-      showCancelButton: true,
-      confirmButtonText: "Confirmar",
-      confirmButtonColor: "green",
-      cancelButtonText: "Cancelar",
-      cancelButtonColor:'red',
-    }).then(({ isConfirmed, value: input }) => {
-      if (isConfirmed) {
-        // Muestra la barra de carga
-            let timerInterval;
-            Swal.fire({
-                title: 'Enviando...',
-                text: 'Por favor, espera mientras se envía...',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                },
-                willClose: () => {
-                    clearInterval(timerInterval);
-                },
-                onBeforeOpen: () => {
-                    Swal.showLoading();
-                },
-                showConfirmButton: false,
-            });
-        if(id === 'inicial'){
-          const body = {
-            file: `videoEntrada_${info.placa}.mp4`,
-            fecha: new Date(info.initalDate).toISOString().split("T")[0],
-            placa: info.placa,
-            destino: input,
-            fileName: 'VideoEntrada'
-          }
-          sendVideoEvidence(body)
-          .then(()=>{
-            Swal.fire({
-              title: '¡CORRECTO!',
-              text: 'El vídeo de evidencia se ha enviado de manera satisfactoria.',
-              timer: 5000,
-              showConfirmButton: false,
-            })
-          })
-          .catch(()=>{
-            Swal.fire({
-              icon:'error',
-              title: '¡ERROR!',
-              text: 'Ha ocurrido un error al momento de enviar la evidencia al correo ingresado. Intentalo mas tarde, si el problema persiste comunícate con el programador que diseñó la página web.',
-              timer: 5000,
-              showConfirmButton: false,
-            })
-          })
-        }else if(id === 'final'){
-          const body = {
-            file: `videoSalida_${info.placa}.mp4`,
-            fecha: new Date(info.finalDate).toISOString().split("T")[0],
-            placa: info.placa,
-            destino: input,
-            fileName: 'VideoSalida'
-          }
-          sendVideoEvidence(body)
-          .then(()=>{
-            Swal.fire({
-              title: '¡CORRECTO!',
-              text: 'El vídeo de evidencia se ha enviado de manera satisfactoria.',
-              timer: 5000,
-              showConfirmButton: false,
-            })
-          })
-          .catch(()=>{
-            Swal.fire({
-              icon:'error',
-              title: '¡ERROR!',
-              text: 'Ha ocurrido un error al momento de enviar la evidencia al correo ingresado. Intentalo mas tarde, si el problema persiste comunícate con el programador que diseñó la página web.',
-              timer: 5000,
-              showConfirmButton: false,
-            })
-          })
-        }else if(id === 'novedad'){
-          const body = {
-            file: `videoNovedad_${info.placa}.mp4`,
-            fecha: new Date(info.newsDate).toISOString().split("T")[0],
-            placa: info.placa,
-            destino: input,
-            fileName: 'VideoNovedad'
-          }
-          sendVideoEvidence(body)
-          .then(()=>{
-            Swal.fire({
-              title: '¡CORRECTO!',
-              text: 'El vídeo de evidencia se ha enviado de manera satisfactoria.',
-              timer: 5000,
-              showConfirmButton: false,
-            })
-          })
-          .catch(()=>{
-            Swal.fire({
-              icon:'error',
-              title: '¡ERROR!',
-              text: 'Ha ocurrido un error al momento de enviar la evidencia al correo ingresado. Intentalo mas tarde, si el problema persiste comunícate con el programador que diseñó la página web.',
-              timer: 5000,
-              showConfirmButton: false,
-            })
-          })
-        }
-      }
-    })
-  }
-
   return (
     <div className="d-flex flex-column container mt-5">
       <div className="d-flex flex-column gap-2 h-100">
@@ -276,24 +149,15 @@ export default function ViewRegister() {
             </div> 
 
             {/* Video entrada */}
-            <div className='row row-cols-sm-3 mt-1'>
+            <div className='row row-cols-sm-2 mt-1'>
               <label className="fw-bold mt-2" style={{fontSize: isMobile ? 14 : 15}}>{isMobile ? 'Vídeo entrada:' : 'Grabación de vídeo entrada:'}</label>
               <div className='text-view'>
                 <label className="fw-bold mt-2" style={{fontSize: isMobile ? 14 : 15}}>Fecha: </label>
                 <label className="ms-1 mt-2" style={{fontSize: isMobile ? 14 : 15, backgroundColor:'whitesmoke'}}>{info.initalDate !== null ? new Date(info.initalDate).toLocaleString("es-CO") : ''}</label>
               </div>
-              <div className='d-flex'>
-                <button
-                  id='inicial'
-                  className='btn btn-sm btn-primary w-100'
-                  onClick={(e)=>sendEvidence(e)}
-                >
-                  Enviar <BsEnvelopeAtFill />
-                </button>
-              </div>
             </div> 
+            {videoEntrada ? (
             <div className='d-flex flex-column mt-1' style={{height: isMobile ? '100%' : '60vh'}}>
-            {videoEntrada && (
               <>
                 <video
                   src={videoEntrada}
@@ -302,64 +166,29 @@ export default function ViewRegister() {
                   style={{height: isMobile ? '100%' : '60vh'}}
                 />
               </>
-            )}
             </div>
-
-            {/* Video salida */}
-            <hr className="my-1 mt-4" />
-            <div className='row row-cols-sm-3 mt-1'>
-              <label className="fw-bold mt-2" style={{fontSize: isMobile ? 14 : 15}}>{isMobile ? 'Vídeo salida:' : 'Grabación de vídeo salida:'}</label>
-              <div className='text-view' >
-                <label className="fw-bold mt-2" style={{fontSize: isMobile ? 14 : 15}}>Fecha:</label>
-                <label className="ms-1 mt-2" style={{fontSize: isMobile ? 14 : 15, backgroundColor:'whitesmoke'}}>{info.finalDate !== null ? new Date(info.finalDate).toLocaleString("es-CO") : ''}</label>
-              </div>
-              <div className='d-flex'>
-                <button
-                  id='final'
-                  className='btn btn-sm btn-primary w-100'
-                  onClick={(e)=>sendEvidence(e)}
-                >
-                  Enviar <BsEnvelopeAtFill />
-                </button>
-              </div>
-            </div>
-            <div className='d-flex flex-column mt-1' style={{height: isMobile ? '100%' : '60vh'}}>
-            {videoSalida && (
-              <>
-                <video
-                  src={videoSalida}
-                  controls
-                  className="w-full rounded border"
-                  style={{height: isMobile ? '100%' : '60vh'}}
-                />
-              </>
-            )}
-            </div>
+            ):
+            <label 
+                className='sm-text text-danger fw-bold w-100 justify-content-center d-flex'
+                style={{
+                  fontSize: isMobile ? 20 : 25
+                }}
+              >NO SE HA GRABADO EL VÍDEO DE ENTRADA</label>
+            }
 
             {/* Video novedades */}
             <hr className="my-1 mt-4" />
-            <div className={`row ${videoNovedad ? 'row-cols-sm-3' : 'row-cols-sm-2'}  mt-1`}>
+            <div className='row row-cols-sm-2 mt-1'>
               <label className="fw-bold mt-2" style={{fontSize: isMobile ? 14 : 15}}>{isMobile ? 'Vídeo novedad:' : 'Grabación de vídeo novedad:'}</label>
               <div className='text-view'>
                 <label className="fw-bold mt-2" style={{fontSize: isMobile ? 14 : 15}}>Fecha:</label>
                 <label className="ms-1 mt-2" style={{fontSize: isMobile ? 14 : 15, backgroundColor:'whitesmoke'}}>{info.newsDate !== null ? new Date(info.newsDate).toLocaleString("es-CO") : ''}</label>
               </div>
-              {videoNovedad &&
-                <div className='d-flex'>
-                  <button
-                    id='novedad'
-                    className='btn btn-sm btn-primary w-100'
-                    onClick={(e)=>sendEvidence(e)}
-                  >
-                    Enviar <BsEnvelopeAtFill />
-                  </button>
-                </div>
-              }
+              <div className='text-view'>
+                <label className="fw-bold mt-2" style={{fontSize: isMobile ? 14 : 15}}>Razón novedad:</label>
+                <label className="ms-1 mt-2" style={{fontSize: isMobile ? 14 : 15, backgroundColor:'whitesmoke'}}>{info.reasonNews !== null ? info.reasonNews : ''}</label>
+              </div>            
             </div>
-            <div className='d-flex w-100'>
-              <label className="fw-bold mt-2" style={{fontSize: isMobile ? 14 : 15}}>Razón novedad:</label>
-              <label className="ms-1 mt-2" style={{fontSize: isMobile ? 14 : 15, backgroundColor:'whitesmoke'}}>{info.reasonNews !== null ? info.reasonNews : ''}</label>
-            </div>            
             {videoNovedad ? (
             <div className='d-flex flex-column mt-1' style={{height: isMobile ? '100%' : '60vh'}}>
               <>
@@ -377,7 +206,7 @@ export default function ViewRegister() {
                 style={{
                   fontSize: isMobile ? 20 : 25
                 }}
-              >NO SE GRABARON NOVEDADES</label>
+              >NO SE HAN GRABARON NOVEDADES</label>
             }
             <button
               onClick={(e)=>navigate('/records')}

@@ -12,6 +12,7 @@ import { MdRemoveCircle } from "react-icons/md";
 import { FaCamera } from "react-icons/fa";
 import Swal from "sweetalert2";
 import "./styles.css";
+import { FaEye } from "react-icons/fa";
 
 const styleStatus = {
   "pedido nuevo": "primary",
@@ -165,6 +166,16 @@ function TableRecords({ records, getAllRecords, loading }) {
               >
                 <FaCamera />
               </button>
+              <button 
+                title="Preview registro" className='btn btn-sm btn-dark'
+                style={{color:'white'}}
+                onClick={(e) => {
+                  setSelectedRow(row)
+                  navigate(`/preview/register/${row.id}`)
+                }}
+              >
+                <FaEye />
+              </button>
             </div>
           ):((user.role === 'usuario' && row.status === 'En proceso') && (
             <button 
@@ -181,7 +192,7 @@ function TableRecords({ records, getAllRecords, loading }) {
           }
         </div>
       ),
-      width: (user.role === 'admin' || user.role === 'supervisor') ? '100px' :  '60px',
+      width: (user.role === 'admin' || user.role === 'supervisor') ? '125px' :  '60px',
     },
     {
       id: "state",
@@ -196,6 +207,13 @@ function TableRecords({ records, getAllRecords, loading }) {
       selector: (row) => row?.placa.toUpperCase(),
       sortable: true,
       width: isMobile ? '100px':'100px'
+    },
+    {
+      id: "zona",
+      name: "zona",
+      selector: (row) => row?.zone,
+      sortable: true,
+      width: isMobile ? '110px':'110px'
     },
     {
       id: "initialVideo",
@@ -214,7 +232,7 @@ function TableRecords({ records, getAllRecords, loading }) {
       width: isMobile ? '125px':'155px'
     },
     {
-      id: "createdBy",
+      id: "initialCreatedBy",
       name: isMobile ? 'Creador' : "Creado por",
       selector: (row) => row?.initialCreatedBy,
       sortable: true,
@@ -242,7 +260,7 @@ function TableRecords({ records, getAllRecords, loading }) {
       width: isMobile ? '115px':'155px'
     },
     {
-      id: "createdBy",
+      id: "finalCreatedBy",
       name: isMobile ? 'Creador' : "Creado por",
       selector: (row) => row?.finalCreatedBy,
       sortable: true,
@@ -263,7 +281,7 @@ function TableRecords({ records, getAllRecords, loading }) {
       width: '140px'
     },
     {
-      id: "novedades",
+      id: "news",
       name: "Novedades",
       center: true,
       cell: (row, index, column, id) => (
@@ -277,7 +295,7 @@ function TableRecords({ records, getAllRecords, loading }) {
       width: isMobile ? '115px':'auto'
     },
     {
-      id: "createdBy",
+      id: "newsCreatedBy",
       name: isMobile ? 'Creador' : "Creado por",
       selector: (row) => row?.newsCreatedBy,
       sortable: true,
@@ -291,7 +309,7 @@ function TableRecords({ records, getAllRecords, loading }) {
       width: '190px'
     },
     {
-      id: "motivo",
+      id: "reasonNews",
       name: "Motivo Novedad",
       selector: (row) => row?.reasonNews,
       sortable: true,
@@ -370,6 +388,12 @@ function TableRecords({ records, getAllRecords, loading }) {
       when: row => (row.status === 'No realizado'),
       style: {
         backgroundColor: 'grey',
+      },
+    },
+    {
+      when: row => (row.news),
+      style: {
+        backgroundColor: '#98bffeff',
       },
     },
   ];

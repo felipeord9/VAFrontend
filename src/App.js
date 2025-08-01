@@ -19,6 +19,7 @@ import "./App.css";
 import ViewRegister from './pages/ViewRegister';
 import Records from './pages/Records';
 import News from './pages/News';
+import PreviewRegister from './pages/PreviewRegister';
 
 function App() {
   return (
@@ -44,6 +45,7 @@ function App() {
               <Route path='/records' element={<PrivateRoute component={Records} />} />
               <Route path='/records/complete' element={<PrivateRoute component={RecordsComplete} />} />
               <Route path='/view/register/:id' element={<PrivateRoute component={ViewRegister} />} />
+              <Route path='/preview/register/:id' element={<PrivateRoute component={PreviewRegister} />} />
               <Route path='/qr/mail' element={<PrivateRoute component={QrMail} />} />
             </Routes>
           </div>

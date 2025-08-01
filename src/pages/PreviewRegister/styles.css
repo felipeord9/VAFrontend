@@ -37,11 +37,6 @@
     flex-direction: row;
 }
 
-.boton-send{
-    display: flex;
-    width: 25%;
-}
-
 @media (max-width: 767px) {
   .reverse {
       display: flex;
@@ -60,8 +55,5 @@
     }
     .text-view{
         flex-direction: column;
-    }
-    .boton-send{
-        width: 95%;
     }
 }

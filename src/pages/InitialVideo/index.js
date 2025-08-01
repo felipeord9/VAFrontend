@@ -14,6 +14,7 @@ import Guia from "../../assets/guia2.png";
 import Guia2 from "../../assets/guia6.png";
 import Swal from 'sweetalert2';
 import './styles.css'
+import { findInstaladores } from '../../services/userService';
 
 export default function InitialVideo() {
   const { user , setUser } = useContext(AuthContext);
@@ -25,7 +26,24 @@ export default function InitialVideo() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [reject, setReject] = useState(false);
+  const selectRefInstalador = useRef();
+  const [users, setUsers] = useState([]);
+
   const navigate = useNavigate();
+
+  useEffect(() => {
+    getAllUsers()
+  }, []);
+  
+  const getAllUsers = () => {
+    findInstaladores()
+      .then(({ data }) => {
+        setUsers(data)
+      })
+      .catch((error) => {
+        console.log('error')
+      });
+  }
 
   const [info, setInfo] = useState({});
 
@@ -308,6 +326,25 @@ export default function InitialVideo() {
               <div className="d-flex flex-column align-items-start">
                 <label className="fw-bold">Nombre de usuario</label>
                 <select
+                  id="email"
+                  value={email}
+                  ref={selectRefInstalador}
+                  className="form-select form-select-sm w-100 me-3"
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                >
+                  <option selected value='' disabled>
+                    -- Seleccione el usuario --
+                  </option>
+                    {users
+                    .sort((a, b) => a.id - b.id)
+                    .map((elem) => (
+                      <option id={elem.id} value={(elem.username)}>
+                        {elem.name}
+                      </option>
+                    ))}
+                </select>
+                {/* <select
                   className="form-select form-select-sm w-100"
                   value={email}
                   id="email"
@@ -344,7 +381,7 @@ export default function InitialVideo() {
                   <option id="jonathan.echavarria" value="jonathan.echavarria">
                     JONATHAN ECHAVARRIA
                   </option>
-                </select>
+                </select> */}
               </div>
               <div>
                 <InputPassword

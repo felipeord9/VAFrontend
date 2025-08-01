@@ -13,6 +13,16 @@ export const findUsers = async () => {
   return data
 }
 
+export const findInstaladores = async () => {
+  const token = JSON.parse(localStorage.getItem("token"))
+  const { data } = await axios.get(`${url}/instaladores`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
+  return data
+}
+
 export const findOneUser = async (id) => {
   const token = JSON.parse(localStorage.getItem("token"))
   const { data } = await axios.get(`${url}/${id}`, {

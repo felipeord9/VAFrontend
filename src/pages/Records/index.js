@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { useState, useEffect, useContext } from "react";
 import TablePendingRecords from '../../components/TablePendingRecords';
 import AuthContext from "../../context/authContext";
@@ -13,6 +13,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Swal from 'sweetalert2';
 import './styles.css'
 import TableRecords from '../../components/TableRecords';
+import { findInstaladores, findUsers } from '../../services/userService';
 
 export default function Records() {
   const { user } = useContext(AuthContext);
@@ -23,11 +24,31 @@ export default function Records() {
     finalDate: '',
   });
   const [loading, setLoading] = useState(false);
-  const [searchRef, setSearchRef] = useState('')
+  const [searchRef, setSearchRef] = useState('');
+  const [searchZone, setSearchZone] = useState('');
+  const [searchInstalador, setSearchInstalador] = useState('');
+  const [searchNew, setSearchNew] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [recording, setRecording] = useState(false);
   const [placa, setPlaca] = useState('');
+  const [zona, setZona] = useState('');
+  const selectRefInstalador = useRef();
+  const [users, setUsers] = useState([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    getAllUsers()
+  }, []);
+  
+  const getAllUsers = () => {
+    findInstaladores()
+      .then(({ data }) => {
+        setUsers(data)
+      })
+      .catch((error) => {
+        console.log('error')
+      });
+  }
 
   const [showModal, setShowModal] = useState(false);
   const closeModal = () => {
@@ -48,9 +69,10 @@ export default function Records() {
   const handleSubmit = (e) => {
     e.preventDefault();
     setRecording(true);
-    if(placa !== ''){
+    if(placa !== '' && zona !== ''){
       const body = {
         placa: placa.toUpperCase(),
+        zone: zona.toUpperCase(),
         status: 'En proceso',
       }
       createRecord(body)
@@ -63,6 +85,7 @@ export default function Records() {
           confirmButtonColor:'green',
         })
         setPlaca('');
+        setZona('');
         getRecordsPending();
       })
       .catch(()=>{
@@ -199,6 +222,92 @@ export default function Records() {
       }
     }
 
+  const completeSearch = (e) =>{
+      e.preventDefault();
+      let result = records;
+      //filtro por placa
+      if(searchRef !== ''){
+        const valor = searchRef.toUpperCase()
+        const filtered = result.filter((elem) => {
+          const dato = elem.placa.toUpperCase();
+          if(dato.includes(valor)) {
+            return elem
+          }
+        })
+        if(filtered.length > 0) {  
+          result = filtered
+        } else {
+          result = []
+        }
+      }
+      //filtro por zona
+      if(searchZone !== ''){
+        const valor = searchZone.toUpperCase()
+        const filtered = result.filter((elem) => {
+          if(elem.zone !== null){
+            const dato = elem?.zone.toUpperCase();
+            if(dato?.includes(valor)) {
+              return elem
+            }
+          }
+        })
+        if(filtered.length > 0) {  
+          result = filtered
+        } else {
+          result = []
+        }
+      }
+      //filtro por instalador
+      if(searchInstalador !== ''){
+        const valor = searchInstalador.toUpperCase()
+        const filtered = result.filter((elem) => {
+          if(elem.initialCreatedBy !== null){
+            const dato = elem?.initialCreatedBy.toUpperCase();
+            if(dato?.includes(valor)) {
+              return elem
+            }
+          }
+        })
+        if(filtered.length > 0) {  
+          result = filtered
+        } else {
+          result = []
+        }
+      }
+      //filtro por fecha
+      if(filterDate.finalDate !== '' && filterDate.initialDate !== ''){
+        const initialDate = new Date(filterDate?.initialDate?.split('-').join('/')).toLocaleDateString();
+        const finalDate = new Date(filterDate?.finalDate?.split('-').join('/')).toLocaleDateString();
+        const filtered = result.filter((elem) => {
+          const splitDate = new Date(elem.initalDate).toLocaleDateString();
+          if (splitDate >= initialDate && splitDate <= finalDate) {
+            return elem;
+          }
+          return 0;
+        });
+        if(filtered.length > 0) {  
+          result = filtered
+        } else {
+          result = []
+        }
+      }else if((filterDate.finalDate !== '' && filterDate.initialDate === '')||(filterDate.finalDate === '' && filterDate.initialDate !== '')){
+        Swal.fire({
+          icon:'warning',
+          title:'¡ERROR!',
+          text:'Para hacer un filtro por fecha debes de especificar la fecha inicial y la fecha final',
+          confirmButtonColor:'red',
+          confirmButtonText:'OK'
+        })
+      }
+
+      //cargar los resultados
+      if(result.length > 0) {  
+        setSuggestions(result)
+      } else {
+        setSuggestions([])
+      }
+    }
+
   const handleChangeFilterDate = (e) => {
     const { id, value } = e.target;
     setFilterDate({
@@ -213,6 +322,8 @@ export default function Records() {
       finalDate: '',
     });
     setSearchRef('');
+    setSearchZone('');
+    setSearchInstalador('');
     getRecordsPending();
     setFillWithDate({})
   };  
@@ -268,6 +379,7 @@ export default function Records() {
   const exportToExcel = (data) => {
     const filteredData = data.map((item) => {
       const placa = item?.placa?.toUpperCase();
+      const zona = item?.zone?.toUpperCase();
       const status = item?.status?.toUpperCase();
       const initalDate = item.initalDate !== null ? new Date(item?.initalDate).toLocaleString("es-CO") : '';
       const initialCreatedBy = item?.initialCreatedBy;
@@ -279,6 +391,7 @@ export default function Records() {
 
       return {
         'Placa': placa,
+        'Zona': zona,
         'Estado': status,
         'Fecha Inicio': initalDate,
         'Instalador Inicio': initialCreatedBy,
@@ -328,7 +441,74 @@ export default function Records() {
                   />
                 </div>
                 <hr className='mb-1 mt-3'/>
-                <div className='d-flex w-100 justify-content-center gap-2 mt-1'>
+                <div className='d-flex flex-column'>
+                  <label className='me-2'>Zona</label>
+                  <select
+                    className="form-select form-select-sm"
+                    value={searchZone}
+                    id="searchZone"
+                    style={{textTransform:'uppercase', width: '100%'}}
+                    required
+                    onChange={(e) => setSearchZone(e.target.value)}
+                  >
+                    <option selected value="" disabled>
+                      -- Seleccione la zona --
+                    </option>
+                    <option id="vip" value="vip">
+                      VIP
+                    </option>
+                    <option id="patios" value="patios">
+                      PATIOS
+                    </option>
+                    <option id="domicilio" value="domicilio">
+                      DOMICILIO
+                    </option>
+                  </select>
+                </div>
+                <hr className='mb-1 mt-3'/>
+                <div className='d-flex flex-column'>
+                  <label className='me-2'>Instalador</label>
+                  <select
+                    ref={selectRefInstalador}
+                    className="form-select form-select-sm w-100 me-3"
+                    onChange={(e) => setSearchInstalador(e.target.value)}
+                    required
+                  >
+                    <option selected value='' disabled>
+                      -- Seleccione el instalador --
+                    </option>
+                      {users
+                      .sort((a, b) => a.id - b.id)
+                      .map((elem) => (
+                        <option id={elem.id} value={(elem.name)}>
+                          {elem.name}
+                        </option>
+                      ))}
+                  </select>
+                  {/* <select
+                    className="form-select form-select-sm"
+                    value={searchInstalador}
+                    id="searchInstalador"
+                    style={{textTransform:'uppercase', width: isMobile ? '100%' : '50%'}}
+                    required
+                    onChange={(e) => setSearchInstalador(e.target.value)}
+                  >
+                    <option selected value="" disabled>
+                      -- Seleccione la zona --
+                    </option>
+                    <option id="vip" value="vip">
+                      VIP
+                    </option>
+                    <option id="patios" value="patios">
+                      PATIOS
+                    </option>
+                    <option id="domicilio" value="domicilio">
+                      DOMICILIO
+                    </option>
+                  </select> */}
+                </div>
+                <hr className='mb-1 mt-3'/>
+                {/* <div className='d-flex w-100 justify-content-center gap-2 mt-1'>
                   <button 
                     className={`btn btn-sm btn-${typeDate === 'Entrada' ? 'primary' : 'secondary'}`}
                     onClick={(e)=>setTypeDate('Entrada')}
@@ -337,7 +517,7 @@ export default function Records() {
                     className={`btn btn-sm btn-${typeDate === 'Entrada' ? 'secondary' : 'primary'}`}
                     onClick={(e)=>setTypeDate('Salida')}
                   >Salida</button> 
-                </div>
+                </div> */}
                 <div className='d-flex flex-column'>
                   <label className='me-2 mt-1'>Desde</label>
                   <input
@@ -365,7 +545,7 @@ export default function Records() {
                 </Form.Group>
               </Modal.Body>
               <Modal.Footer>
-                <Button variant="primary" onClick={(e)=>(duoSearch(e), closeModal(e))}>
+                <Button variant="primary" onClick={(e)=>(completeSearch(e), closeModal(e))}>
                   FILTRAR
                 </Button>
                 <Button variant="danger" onClick={(e)=>(removeFilterDate(e),closeModal(e))}>
@@ -397,6 +577,29 @@ export default function Records() {
                     required
                   />
                 </div>
+                <div className='d-flex w-100 justify-content-center mt-2'>
+                  <select
+                    className="form-select form-select-sm"
+                    value={zona}
+                    id="zona"
+                    style={{textTransform:'uppercase', width: isMobile ? '100%' : '50%'}}
+                    required
+                    onChange={(e) => setZona(e.target.value)}
+                  >
+                    <option selected value="" disabled>
+                      -- Seleccione la zona --
+                    </option>
+                    <option id="vip" value="vip">
+                      VIP
+                    </option>
+                    <option id="patios" value="patios">
+                      PATIOS
+                    </option>
+                    <option id="domicilio" value="domicilio">
+                      DOMICILIO
+                    </option>
+                  </select>
+                </div>
               </Modal.Body>
               <Modal.Footer>
                 <Button variant="success" onClick={(e)=>handleSubmit(e)}>
@@ -427,7 +630,7 @@ export default function Records() {
                   Exportar
                 </button>
               }
-              {(user.role === 'admin' || user.role === 'supervisor') &&
+              {(user.role === 'admin' || user.role === 'supervisor' || user.role === 'creador') &&
                 <button 
                   className='btn btn-sm btn-danger d-flex justify-content-center' 
                   style={{width:isMobile ? '100%':'50%'}}

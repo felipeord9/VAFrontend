@@ -22,6 +22,7 @@ export default function Navbar() {
   const [ruta, setRuta] = useState('');
   const [recording, setRecording] = useState(false);
   const [placa, setPlaca] = useState('');
+  const [zona, setZona] = useState('');
 
   const handleClickImg = (e) => {
     if(user.role==='aprobador'){
@@ -73,9 +74,10 @@ export default function Navbar() {
   const handleSubmit = (e) => {
     e.preventDefault();
     setRecording(true);
-    if(placa !== ''){
+    if(placa !== '' && zona !== ''){
       const body = {
         placa: placa.toUpperCase(),
+        zone: zona.toUpperCase(),
         status: 'En proceso',
       }
       createRecord(body)
@@ -88,6 +90,7 @@ export default function Navbar() {
           confirmButtonColor:'green',
         })
         setPlaca('');
+        setZona('');
       })
       .catch(()=>{
         setRecording(false);
@@ -131,6 +134,29 @@ export default function Navbar() {
                     placeholder='Eje: ABC000'
                     required
                   />
+                </div>
+                <div className='d-flex w-100 justify-content-center mt-2'>
+                  <select
+                    className="form-select form-select-sm"
+                    value={zona}
+                    id="zona"
+                    style={{textTransform:'uppercase', width: isMobile ? '100%' : '50%'}}
+                    required
+                    onChange={(e) => setZona(e.target.value)}
+                  >
+                    <option selected value="" disabled>
+                      -- Seleccione la zona --
+                    </option>
+                    <option id="vip" value="vip">
+                      VIP
+                    </option>
+                    <option id="patios" value="patios">
+                      PATIOS
+                    </option>
+                    <option id="domicilio" value="domicilio">
+                      DOMICILIO
+                    </option>
+                  </select>
                 </div>
               </Modal.Body>
               <Modal.Footer>
@@ -177,7 +203,7 @@ export default function Navbar() {
               onClick={(e) => setShowSidebar(!showSideBar)}
               style={{userSelect:'none'}}
             >
-              {(user.role === 'admin' || user.role === 'supervisor') &&
+              {(user.role === 'admin' || user.role === 'supervisor' || user.role === 'creador') &&
                 <li className="nav-text">
                   <Link
                     onClick={(e)=>openModalNew(e)}  

@@ -362,7 +362,9 @@ export default function ModalUsers({
                     -- Seleccione un cargo --
                   </option>
                   <option value="usuario">USUARIO</option>
+                  <option value="creador">CREADOR</option>
                   <option value="supervisor">SUPERVISOR</option>
+                  <option value="bodega">BODEGA</option>
                   {infoUser.role==='admin' && (
                     <option value="admin">ADMINISTRADOR</option>
                   )}

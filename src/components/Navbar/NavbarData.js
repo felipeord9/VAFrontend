@@ -18,7 +18,7 @@ export const NavBarData = [
     path: "/records",
     icon: <FaClipboardList />,
     cName: "nav-text",
-    access: ['admin', 'supervisor', 'usuario']
+    access: ['admin', 'supervisor', 'creador', 'usuario']
   },
   /* {
     title: "Registros pendientes",
@@ -35,11 +35,18 @@ export const NavBarData = [
     access: ['admin','usuario']
   }, */
   {
-    title: "Mail Qr",
+    title: "Mail QR",
     path: "/qr/mail",
     icon: <MdOutgoingMail />,
     cName: "nav-text",
-    access: ['admin', 'supervisor']
+    access: ['admin', 'bodega']
+  },
+  {
+    title: "Tabla QR",
+    path: "/qrs",
+    icon: <FaClipboardList />,
+    cName: "nav-text",
+    access: ['admin', 'bodega']
   },
   {
     title: "Usuarios",

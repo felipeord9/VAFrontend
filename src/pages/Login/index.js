@@ -14,7 +14,15 @@ export default function Login() {
   const { user, setUser } = useContext(AuthContext);
 
   useEffect(() => {
-    if (isLogged) navigate('/records')
+    /* if (isLogged) navigate('/records') */
+    if (
+      isLogged && user.role==='admin' || isLogged && user.role==='creador' ||
+      isLogged && user.role==='supervisor' || isLogged && user.role==='usuario'
+    ){
+      navigate('/records')
+    }else if(isLogged && user.role==='bodega'){
+      navigate('/')
+    }
   }, [isLogged, navigate]);
 
   const handleLogin = async (e) => {
