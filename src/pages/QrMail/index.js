@@ -6,6 +6,7 @@ import { sendVideoQr } from '../../services/videoService';
 import Guia2 from "../../assets/guia6.png";
 import Swal from 'sweetalert2';
 import './styles.css'
+import { createQr } from '../../services/qrService';
 
 export default function QrMail() {
   const { user , setUser } = useContext(AuthContext);
@@ -14,12 +15,30 @@ export default function QrMail() {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [timerInterval, setTimerInterval] = useState(null);
   const [placa, setPlaca] = useState('');
+  const [search, setSearch] = useState({
+    numFactura: "",
+    razonSocial: "",
+    refProduct: "",
+    descriProduct: "",
+    cantidad: "",
+    arriveDate: '',
+    observations: '',
+  });
   const navigate = useNavigate();
 
   const videoRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const streamRef = useRef(null);
   const recordedChunks = useRef([]);
+
+  const handlerChangeSearch = (e) => {
+    const { id, value } = e.target;
+    console.log(value);
+    setSearch({
+      ...search,
+      [id]: value,
+    });
+  };
 
   //logica para saber si es celular
   const [isMobile, setIsMobile] = useState(false);
@@ -93,76 +112,129 @@ export default function QrMail() {
   const uploadVideo = async (e) => {
       e.preventDefault();
       setRecording(true);
-      if(recordedChunks){
-        Swal.fire({
-          icon:'question',
-          title:'Confirmación',
-          text:'¿Estás segur@ de querer enviar este vídeo?',
-          showConfirmButton:true,
-          confirmButtonColor:'green',
-          confirmButtonText:'Si',
-          showDenyButton: true,
-          denyButtonColor:'red',
-        })
-        .then ( async ({isConfirmed, isDenied})=>{
-          if(isConfirmed){
-            // Muestra la barra de carga
-            let timerInterval;
-            Swal.fire({
-                title: 'Enviando...',
-                text: 'Por favor, espera mientras se envía...',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                },
-                willClose: () => {
-                    clearInterval(timerInterval);
-                },
-                onBeforeOpen: () => {
-                    Swal.showLoading();
-                },
-                showConfirmButton: false,
-            });
-            const blob = new Blob(recordedChunks.current, { type: 'video/webm' });
-            const formData = new FormData();
-            formData.append('video', blob, 'grabacion.webm');
-            formData.append('createdAt', new Date().toISOString().split("T")[0]);
-            formData.append('placa', placa.toUpperCase());
-        
-            await sendVideoQr(formData)
-            .then(() =>{
-              setPreviewUrl(null);
-              setElapsedTime(0);
+      if(search.arriveDate !== '' && search.cantidad !== ''
+        && search.descriProduct !== '' && search.numFactura !== ''
+        && search.observations !== '' && search.razonSocial !== ''
+        && search.refProduct !== ''
+      ){
+        if(recordedChunks){
+          Swal.fire({
+            icon:'question',
+            title:'Confirmación',
+            text:'¿Estás segur@ de querer enviar este vídeo?',
+            showConfirmButton:true,
+            confirmButtonColor:'green',
+            confirmButtonText:'Si',
+            showDenyButton: true,
+            denyButtonColor:'red',
+          })
+          .then ( async ({isConfirmed, isDenied})=>{
+            if(isConfirmed){
+              // Muestra la barra de carga
+              let timerInterval;
+              Swal.fire({
+                  title: 'Enviando...',
+                  text: 'Por favor, espera mientras se envía...',
+                  allowOutsideClick: false,
+                  didOpen: () => {
+                      Swal.showLoading();
+                  },
+                  willClose: () => {
+                      clearInterval(timerInterval);
+                  },
+                  onBeforeOpen: () => {
+                      Swal.showLoading();
+                  },
+                  showConfirmButton: false,
+              });
+              const blob = new Blob(recordedChunks.current, { type: 'video/webm' });
+              const formData = new FormData();
+              formData.append('video', blob, 'grabacion.webm');
+              formData.append('createdAt', new Date().toISOString().split("T")[0]);
+              formData.append('numFactura', search.numFactura);
+              formData.append('razonSocial', search.razonSocial.toUpperCase() );
+              formData.append('arriveDate', search.arriveDate );
+              formData.append('refProduct', search.refProduct );
+              formData.append('descriProduct', search.descriProduct.toUpperCase() );
+              formData.append('cantidad', search.cantidad );
+              formData.append('observations', search.observations.toUpperCase());
           
-              Swal.fire({
-                title:'¡Felicitades!',
-                text:'Se ha enviado el vídeo para QR de manera satisfactoria.',
-                showConfirmButton: true,
-                confirmButtonColor:'green',
+              await sendVideoQr(formData)
+              .then(() =>{
+                const body = {
+                  numFactura: search.numFactura,
+                  razonSocial: search.razonSocial.toUpperCase(),
+                  refProduct: search.refProduct,
+                  descriProduct: search.descriProduct.toUpperCase(),
+                  cantidad: search.cantidad,
+                  arriveDate: search.arriveDate,
+                  observations: search.observations.toUpperCase(),
+                  createdBy: user.name,
+                  createdAt: new Date(),
+                }
+  
+                createQr(body)
+                .then(()=>{
+                setPreviewUrl(null);
+                setElapsedTime(0);
+                setSearch({
+                  arriveDate:'',
+                  cantidad:'',
+                  descriProduct:'',
+                  numFactura:'',
+                  observations:'',
+                  razonSocial:'',
+                  refProduct:''
+                })
+                  Swal.fire({
+                    title:'¡Felicitades!',
+                    text:'Se ha enviado el vídeo para QR y registrado de manera satisfactoria.',
+                    showConfirmButton: true,
+                    confirmButtonColor:'green',
+                  })
+                  setPlaca('');
+                  /* navigate('/records') */
+                })
+                .catch(()=>{
+                  setRecording(false);
+                  Swal.fire({
+                    icon:'warning',
+                    title:'¡ERROR!',
+                    text:'Ha ocurrido un error al momento de registrar el QR. Intentalo de nuevo. Si el problema persiste comunícate con el programador.',
+                    showConfirmButton: true,
+                    confirmButtonColor:'red',
+                  })
+                })
               })
-              setPlaca('');
-              /* navigate('/records') */
-            })
-            .catch(()=>{
-              setRecording(false);
-              Swal.fire({
-                icon:'warning',
-                title:'¡ERROR!',
-                text:'Ha ocurrido un error al momento de enviar el vídeo. Intentalo de nuevo. Si el problema persiste comunícate con el programador.',
-                showConfirmButton: true,
-                confirmButtonColor:'red',
+              .catch(()=>{
+                setRecording(false);
+                Swal.fire({
+                  icon:'warning',
+                  title:'¡ERROR!',
+                  text:'Ha ocurrido un error al momento de enviar el vídeo. Intentalo de nuevo. Si el problema persiste comunícate con el programador.',
+                  showConfirmButton: true,
+                  confirmButtonColor:'red',
+                })
               })
-            })
-          }
-        })
-      } else {
-        setRecording(false);
+            }
+          })
+        } else {
+          setRecording(false);
+          Swal.fire({
+            icon:'warning',
+            title:'¡ATENCION!',
+            text:'Por favor graba el vídeo del QR para poder hacer el envío.',
+            showConfirmButton: true,
+            confirmButtonColor:'red',
+          })
+        }
+      }else{
         Swal.fire({
           icon:'warning',
-          title:'¡ATENCION!',
-          text:'Por favor graba el vídeo del QR para poder hacer el envío.',
+          title:'¡ATENCIÓN!',
+          text:'Debes llenar todos los campos para poder generar el QR.',
           showConfirmButton: true,
-          confirmButtonColor:'red',
+          confirmButtonColor: 'red'
         })
       }
     };
@@ -172,23 +244,98 @@ export default function QrMail() {
       <div className="d-flex flex-column gap-2 h-100">
         <div className="d-flex div-botons justify-content-center align-items-center bg-light rounded shadow-sm p-2 pe-2">
           <div className='d-flex flex-column w-100'>
-            <label style={{fontSize: isMobile ? 15 : 22, color: 'rgba(40, 211, 188, 0.8)'}} className='d-flex justify-content-center fw-bold'>VÍDEO PARA QR</label>
-            <div className='d-flex div-botons mt-1 w-100 gap-2 justify-content-center align-items-center'>
-              <div className='justify-content-center align-items-center d-flex flex-column'>
-                <label className="fw-bold">Placa</label>
-                <div className='d-flex'>
-                  <input
-                    type="text"
-                    value={placa}
-                    className="form-control form-control-sm shadow-sm"
-                    style={{textTransform:'uppercase'}}
-                    onChange={(e)=>setPlaca(e.target.value)}
-                    placeholder='Eje: ABC000'
-                    required
-                  />
-                </div>
+            <label style={{fontSize: isMobile ? 15 : 22, color: 'rgba(40, 211, 188, 0.8)'}} className='d-flex justify-content-center fw-bold'>INFORMACIÓN PARA QR</label>
+            {/* <hr className="my-1" /> */}
+             <div className="row row-cols-sm-3 mt-3" style={{fontSize:12}}>
+              <div className='d-flex flex-column'>
+                <label className="fw-bold">NÚMERO DE FACTURA</label>
+                <input
+                  id="numFactura"
+                  type="text"
+                  className="form-control form-control-sm"
+                  placeholder='*CAMPO OBLIGATORIO*'
+                  value={search.numFactura}
+                  onChange={handlerChangeSearch}
+                  required
+                />
+              </div> 
+              <div className='d-flex flex-column'>
+                <label className="fw-bold">RAZÓN SOCIAL</label>
+                <input
+                  id="razonSocial"
+                  type="text"
+                  className="form-control form-control-sm"
+                  value={search.razonSocial}
+                  onChange={handlerChangeSearch}
+                  placeholder='*CAMPO OBLIGATORIO*'
+                  style={{textTransform:'uppercase'}}
+                  required
+                />
               </div>
-            </div> 
+              <div className='d-flex flex-column'>
+                <label className="fw-bold">FECHA LLEGADA</label>
+                <input
+                  id="arriveDate"
+                  type="date"
+                  className="form-control form-control-sm"
+                  value={search.arriveDate}
+                  placeholder='*CAMPO OBLIGATORIO*'
+                  max={new Date().toISOString().split("T")[0]}
+                  onChange={handlerChangeSearch}
+                  required
+                />
+              </div>
+            </div>
+            <div className="row row-cols-sm-3 mt-2 mb-3" style={{fontSize:12}}>
+              <div className='d-flex flex-column'>
+                <label className="fw-bold">REFERENCIA DEL PRODUCTO</label>
+                <input
+                  id="refProduct"
+                  type="text"
+                  className="form-control form-control-sm"
+                  value={search.refProduct}
+                  placeholder='*CAMPO OBLIGATORIO*'
+                  onChange={handlerChangeSearch}
+                  required
+                />
+              </div> 
+              <div className='d-flex flex-column'>
+                <label className="fw-bold">DESCRIPCIÓN DEL PRODUCTO</label>
+                <input
+                  id="descriProduct"
+                  type="text"
+                  className="form-control form-control-sm"
+                  value={search.descriProduct}
+                  onChange={handlerChangeSearch}
+                  placeholder='*CAMPO OBLIGATORIO*'
+                  style={{textTransform:'uppercase'}}
+                  required
+                />
+              </div>
+              <div className='d-flex flex-column'>
+                <label className="fw-bold">CANTIDAD</label>
+                <input
+                  id="cantidad"
+                  type="number"
+                  className="form-control form-control-sm"
+                  value={search.cantidad}
+                  placeholder='*CAMPO OBLIGATORIO*'
+                  onChange={handlerChangeSearch}
+                  required
+                />
+              </div>
+            </div>
+            <div className="d-flex flex-column mb-3" style={{fontSize: 12}}>
+              <label className="fw-bold">OBSERVACIONES</label>
+              <textarea
+                id="observations"
+                className="form-control"
+                value={search.observations}
+                onChange={handlerChangeSearch}
+                placeholder='*CAMPO OBLIGATORIO*'
+                style={{ minHeight: 70, maxHeight: 100, fontSize: 12 , textTransform:'uppercase' }}
+              ></textarea>
+            </div>
             <label className="fw-bold mt-2" style={{fontSize: isMobile ? 14 : 15}}>Grabación de vídeo para Qr:</label>
             <div className='d-flex flex-column' style={{height: isMobile ? '80%' : '60vh'}}>
             {!previewUrl && (

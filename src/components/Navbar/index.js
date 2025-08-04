@@ -25,10 +25,10 @@ export default function Navbar() {
   const [zona, setZona] = useState('');
 
   const handleClickImg = (e) => {
-    if(user.role==='aprobador'){
-      return navigate('/solicitudes')
+    if(user.role==='bodega'){
+      return navigate('/qrs')
     }else{
-      return navigate('/inicio')
+      return navigate('/records')
     }
   }
 
@@ -178,7 +178,7 @@ export default function Navbar() {
                 src={Logo}
                 width={100}
                 alt=""
-                onClick={(e)=> navigate('/records')}
+                onClick={(e)=> handleClickImg(e)}
                 style={{ cursor: "pointer" }}
               />
             </div>

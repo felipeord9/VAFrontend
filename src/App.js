@@ -20,6 +20,7 @@ import ViewRegister from './pages/ViewRegister';
 import Records from './pages/Records';
 import News from './pages/News';
 import PreviewRegister from './pages/PreviewRegister';
+import Qrs from './pages/Qrs';
 
 function App() {
   return (
@@ -47,6 +48,7 @@ function App() {
               <Route path='/view/register/:id' element={<PrivateRoute component={ViewRegister} />} />
               <Route path='/preview/register/:id' element={<PrivateRoute component={PreviewRegister} />} />
               <Route path='/qr/mail' element={<PrivateRoute component={QrMail} />} />
+              <Route path='/qrs' element={<PrivateRoute component={Qrs} />} />
             </Routes>
           </div>
         </Router>

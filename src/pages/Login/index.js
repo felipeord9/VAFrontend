@@ -21,7 +21,7 @@ export default function Login() {
     ){
       navigate('/records')
     }else if(isLogged && user.role==='bodega'){
-      navigate('/')
+      navigate('/qrs')
     }
   }, [isLogged, navigate]);
 
