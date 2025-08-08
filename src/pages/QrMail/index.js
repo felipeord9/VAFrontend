@@ -64,6 +64,24 @@ export default function QrMail() {
     return `${m}:${s}`;
   };
 
+  const enableTorch = async (stream) => {
+    const track = stream.getVideoTracks()[0];
+    const capabilities = track.getCapabilities();
+
+    if (capabilities.torch) {
+      try {
+        await track.applyConstraints({
+          advanced: [{ torch: true }],
+        });
+        console.log("Flash activado");
+      } catch (e) {
+        console.error("Error al activar el flash:", e);
+      }
+    } else {
+      console.warn("El dispositivo no soporta flash/torch.");
+    }
+  };
+
   const startRecording = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { 
@@ -76,6 +94,9 @@ export default function QrMail() {
 
     streamRef.current = stream;
     videoRef.current.srcObject = stream;
+
+    // Intenta activar el flash
+    enableTorch(stream);
 
     mediaRecorderRef.current = new MediaRecorder(stream);
     recordedChunks.current = [];
