@@ -294,7 +294,7 @@ export default function QrMail() {
                 />
               </div>
               <div className='d-flex flex-column'>
-                <label className="fw-bold">FECHA LLEGADA</label>
+                <label className="fw-bold">FECHA FACTURA</label>
                 <input
                   id="arriveDate"
                   type="date"

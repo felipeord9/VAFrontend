@@ -88,7 +88,7 @@ function TableQrs({ qrs, getAllQrs, loading }) {
     },
     {
       id: "arriveDate",
-      name: "Fecha Llegada",
+      name: "Fecha Factura",
       selector: (row) => new Date(row.arriveDate).toLocaleString("es-CO"),
       sortable: true,
       width: '190px'

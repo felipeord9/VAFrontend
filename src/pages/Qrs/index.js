@@ -241,7 +241,7 @@ export default function Qrs() {
         'Referencia': refProduct,
         'Descripción': descriProduct,
         'Cantidad': cantidad,
-        'Fecha Llegada': arriveDate,
+        'Fecha Factura': arriveDate,
         'Fecha Creación': createdAt,
         'Observaciones': observations,
       };
