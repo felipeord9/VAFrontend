@@ -13,6 +13,7 @@ import { MdNoteAdd } from "react-icons/md";
 import { createRecord } from "../../services/recordService";
 import Swal from "sweetalert2";
 import "./styles.css";
+import { Wifi } from "lucide-react"; // Icono de WiFi (lucide-react)
 
 export default function Navbar() {
   const { isLogged, logout } = useUser();
@@ -23,6 +24,8 @@ export default function Navbar() {
   const [recording, setRecording] = useState(false);
   const [placa, setPlaca] = useState('');
   const [zona, setZona] = useState('');
+  const [wifiStatus, setWifiStatus] = useState("checking"); // ok, slow, offline
+  const [latency, setLatency] = useState('');
 
   const handleClickImg = (e) => {
     if(user.role==='bodega'){
@@ -52,6 +55,52 @@ export default function Navbar() {
       window.removeEventListener('resize', handleResize);
     };
   }, []);
+
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        const start = Date.now();
+        const res = await fetch("https://192.168.1.248:3000/", {
+          method: "GET",
+          mode: "no-cors",
+        });
+        const latency = Date.now() - start;
+
+        if (!res) throw new Error("Sin respuesta");
+
+        if (latency < 200) {
+          setWifiStatus("ok"); // ✅ buena conexión
+        } else if (latency < 750) {
+          setWifiStatus("slow"); // ⚠️ lenta
+        } else {
+          setWifiStatus("bad"); // ❌ señal muy mala
+        }
+        setLatency(latency)
+      } catch {
+        setWifiStatus("offline"); // ❌ no hay red
+        setLatency(null);
+      }
+    };
+
+    checkConnection();
+    const interval = setInterval(checkConnection, 2000); // cada 5 segundos
+    return () => clearInterval(interval);
+  }, []);
+
+  const getColor = () => {
+    switch (wifiStatus) {
+      case "ok":
+        return "text-green-500";
+      case "slow":
+        return "text-yellow-500";
+      case "bad":
+        return "text-orange-500";
+      case "offline":
+        return "text-red-500";
+      default:
+        return "text-gray-400";
+    }
+  };
 
   //logica del modal con el scanner
   const [showModal, setShowModal] = useState(false);
@@ -181,6 +230,22 @@ export default function Navbar() {
                 onClick={(e)=> handleClickImg(e)}
                 style={{ cursor: "pointer" }}
               />
+            </div>
+
+            <div className={`flex items-center ${isMobile ? 'gap-0' : 'gap-2' }`}>
+              <Wifi className={`${isMobile ? 'w-2' : 'w-6' } h-6 ${getColor()}`}
+                style={{
+                  color: wifiStatus === "ok" ? 'greenyellow' :
+                  wifiStatus === "slow" ? 'orange' : wifiStatus === "offline" && 'red'
+                }} 
+              />
+              <span className={`text-sm `} style={{color:'white'}}>
+                {wifiStatus === "ok" && `${!isMobile ? `Conectado (${latency} ms)` : `${latency} ms`} `}
+                {wifiStatus === "slow" && `${!isMobile ? `Conexión lenta (${latency} ms)` : `${latency} ms`} `}
+                {wifiStatus === "bad" && `${!isMobile ? `Señal muy mala (${latency} ms)`: `${latency} ms`} `}
+                {wifiStatus === "offline" && "Sin conexión"}
+                {wifiStatus === "checking" && "Verificando..."}
+              </span>
             </div>
 
             <div className="d-flex flex-row align-items-center pe-0 me-0">

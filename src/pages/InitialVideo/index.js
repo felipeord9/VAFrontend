@@ -124,6 +124,45 @@ export default function InitialVideo() {
     }
   }
 
+  //Funcion para verificar conexion con servidor
+  const pingServer = async () => {
+    let latencies = [];
+
+    for (let i = 0; i < 10; i++) {
+      const start = Date.now();
+      try {
+        await fetch("https://192.168.1.248:3000/", {
+          method: "GET",
+          mode: "no-cors",
+        });
+
+        const latency = Date.now() - start;
+        latencies.push(latency);
+      } catch (err) {
+        latencies.push(null); // si falla
+      }
+    }
+
+    // Filtramos los pings válidos
+    const validLatencies = latencies.filter((l) => l !== null);
+    const successCount = validLatencies.length;
+
+    if (successCount < 5) {
+      return { status: "bad", avg: null, pings: latencies };
+    }
+
+    const avg =
+      validLatencies.reduce((a, b) => a + b, 0) / validLatencies.length;
+
+    if (avg < 200) {
+      return { status: "ok", avg, pings: latencies };
+    } else if (avg < 750) {
+      return { status: "regular", avg, pings: latencies };
+    } else {
+      return { status: "bad", avg, pings: latencies };
+    }
+  };
+
   const enableTorch = async (stream) => {
     const track = stream.getVideoTracks()[0];
     const capabilities = track.getCapabilities();
@@ -206,73 +245,156 @@ export default function InitialVideo() {
         })
         .then ( async ({isConfirmed, isDenied})=>{
           if(isConfirmed){
-            // Muestra la barra de carga
-            let timerInterval;
             Swal.fire({
-                title: 'Registrando...',
-                text: 'Por favor, espera mientras se registra...',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                },
-                willClose: () => {
-                    clearInterval(timerInterval);
-                },
-                onBeforeOpen: () => {
-                    Swal.showLoading();
-                },
-                showConfirmButton: false,
-            });
-            const blob = new Blob(recordedChunks.current, { type: 'video/webm' });
-            const formData = new FormData();
-            formData.append('video', blob, 'grabacion.webm');
-            formData.append('placa', info.placa.toUpperCase());
-            formData.append('concept', 'Entrada');
-            formData.append('createdAt', new Date().toISOString().split("T")[0]);
-        
-            await sendVideo(formData)
-            .then(() =>{
-              setPreviewUrl(null);
-              setElapsedTime(0);
+              title:'Verificando señal...',
+              text:'Espere un momento por favor.',
+              showConfirmButton: false
+            })
+            const avgLatency = await pingServer();
+            if (avgLatency.avg < 200 && avgLatency.status === 'ok') {
+              // Muestra la barra de carga
+              let timerInterval;
+              Swal.fire({
+                  title: '¡Señal buena!',
+                  text: 'Por favor, espera mientras se registra...',
+                  allowOutsideClick: false,
+                  didOpen: () => {
+                      Swal.showLoading();
+                  },
+                  willClose: () => {
+                      clearInterval(timerInterval);
+                  },
+                  onBeforeOpen: () => {
+                      Swal.showLoading();
+                  },
+                  showConfirmButton: false,
+              });
+              const blob = new Blob(recordedChunks.current, { type: 'video/webm' });
+              const formData = new FormData();
+              formData.append('video', blob, 'grabacion.webm');
+              formData.append('placa', info.placa.toUpperCase());
+              formData.append('concept', 'Entrada');
+              formData.append('createdAt', new Date().toISOString().split("T")[0]);
           
-              const body = {
-                initialVideo: 1,
-                initialCreatedBy: user.name,
-                initalDate: new Date(),
-              }
-          
-              updateRecord(info.id, body)
-              .then(()=>{
-                setRecording(false);
-                Swal.fire({
-                  title:'¡Felicitades!',
-                  text:'Se ha registrado y guardado el vídeo de entrada de manera satisfactoria.',
-                  showConfirmButton: true,
-                  confirmButtonColor:'green',
+              await sendVideo(formData)
+              .then(() =>{
+                setPreviewUrl(null);
+                setElapsedTime(0);
+            
+                const body = {
+                  initialVideo: 1,
+                  initialCreatedBy: user.name,
+                  initalDate: new Date(),
+                }
+            
+                updateRecord(info.id, body)
+                .then(()=>{
+                  setRecording(false);
+                  Swal.fire({
+                    title:'¡Felicitades!',
+                    text:'Se ha registrado y guardado el vídeo de entrada de manera satisfactoria.',
+                    showConfirmButton: true,
+                    confirmButtonColor:'green',
+                  })
+                  setInfo({});
+                  navigate('/records')
                 })
-                setInfo({});
-                navigate('/records')
+                .catch(()=>{
+                  setRecording(false);
+                  Swal.fire({
+                    title:'¡ERROR!',
+                    text:'Ha ocurrido un error al momento de hacer el registro. Intentalo de nuevo. Si el problema persiste comunícate con el programador.',
+                    showConfirmButton: true,
+                    confirmButtonColor:'green',
+                  })
+                })
               })
               .catch(()=>{
                 setRecording(false);
                 Swal.fire({
+                  icon:'warning',
                   title:'¡ERROR!',
-                  text:'Ha ocurrido un error al momento de hacer el registro. Intentalo de nuevo. Si el problema persiste comunícate con el programador.',
+                  text:'Ha ocurrido un error al momento de guarda el vídeo. Intentalo de nuevo. Si el problema persiste comunícate con el programador.',
                   showConfirmButton: true,
-                  confirmButtonColor:'green',
+                  confirmButtonColor:'red',
                 })
               })
-            })
-            .catch(()=>{
-              setRecording(false);
+            } else if (avgLatency.avg < 750 && avgLatency.status === 'regular') {
+              // Muestra la barra de carga
+              let timerInterval;
+              Swal.fire({
+                  icon:'warning',
+                  title: '¡Señal regular!',
+                  text: 'Conexión regular, es posible falle el proceso, pero Se continuará a realizar el registro...',
+                  allowOutsideClick: false,
+                  didOpen: () => {
+                      Swal.showLoading();
+                  },
+                  willClose: () => {
+                      clearInterval(timerInterval);
+                  },
+                  onBeforeOpen: () => {
+                      Swal.showLoading();
+                  },
+                  showConfirmButton: false,
+              });
+              const blob = new Blob(recordedChunks.current, { type: 'video/webm' });
+              const formData = new FormData();
+              formData.append('video', blob, 'grabacion.webm');
+              formData.append('placa', info.placa.toUpperCase());
+              formData.append('concept', 'Entrada');
+              formData.append('createdAt', new Date().toISOString().split("T")[0]);
+          
+              await sendVideo(formData)
+              .then(() =>{
+                setPreviewUrl(null);
+                setElapsedTime(0);
+            
+                const body = {
+                  initialVideo: 1,
+                  initialCreatedBy: user.name,
+                  initalDate: new Date(),
+                }
+            
+                updateRecord(info.id, body)
+                .then(()=>{
+                  setRecording(false);
+                  Swal.fire({
+                    title:'¡Felicitades!',
+                    text:'Se ha registrado y guardado el vídeo de entrada de manera satisfactoria.',
+                    showConfirmButton: true,
+                    confirmButtonColor:'green',
+                  })
+                  setInfo({});
+                  navigate('/records')
+                })
+                .catch(()=>{
+                  setRecording(false);
+                  Swal.fire({
+                    title:'¡ERROR!',
+                    text:'Ha ocurrido un error al momento de hacer el registro. Intentalo de nuevo. Si el problema persiste comunícate con el programador.',
+                    showConfirmButton: true,
+                    confirmButtonColor:'green',
+                  })
+                })
+              })
+              .catch(()=>{
+                setRecording(false);
+                Swal.fire({
+                  icon:'warning',
+                  title:'¡ERROR!',
+                  text:'Ha ocurrido un error al momento de guarda el vídeo. Intentalo de nuevo. Si el problema persiste comunícate con el programador.',
+                  showConfirmButton: true,
+                  confirmButtonColor:'red',
+                })
+              })
+            } else {
               Swal.fire({
                 icon:'warning',
-                title:'¡ERROR!',
-                text:'Ha ocurrido un error al momento de guarda el vídeo. Intentalo de nuevo. Si el problema persiste comunícate con el programador.',
-                showConfirmButton: true,
-                confirmButtonColor:'red',
+                title:'Señal mala',
+                text:'Alta probabilidad de error en el registro, NO se continuará con el proceso. Revisa tu conexión y vuelve a intentarlo.'
               })
-            })
+            }
           }
         })
       } else {
