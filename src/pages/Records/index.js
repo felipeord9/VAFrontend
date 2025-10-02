@@ -74,6 +74,7 @@ export default function Records() {
         placa: placa.toUpperCase(),
         zone: zona.toUpperCase(),
         status: 'En proceso',
+        placaCreatedAt: new Date(),
       }
       createRecord(body)
       .then(()=>{

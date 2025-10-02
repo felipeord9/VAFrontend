@@ -128,6 +128,7 @@ export default function Navbar() {
         placa: placa.toUpperCase(),
         zone: zona.toUpperCase(),
         status: 'En proceso',
+        placaCreatedAt: new Date(),
       }
       createRecord(body)
       .then(()=>{
