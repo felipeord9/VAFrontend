@@ -53,6 +53,16 @@ export const findOneRecord = async (id) => {
   return data
 }
 
+export const verifyPlate = async (id) => {
+  const token = JSON.parse(localStorage.getItem("token"))
+  const { data } = await axios.get(`${url}/placa/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
+  return data
+}
+
 export const createRecord = async (body) => {
   const token = JSON.parse(localStorage.getItem("token"))
   const { data } = await axios.post(url, body, {
