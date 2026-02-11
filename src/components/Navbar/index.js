@@ -233,7 +233,7 @@ export default function Navbar() {
               />
             </div>
 
-            <div className={`flex items-center ${isMobile ? 'gap-0' : 'gap-2' }`}>
+            {/*<div className={`flex items-center ${isMobile ? 'gap-0' : 'gap-2' }`}>
               <Wifi className={`${isMobile ? 'w-2' : 'w-6' } h-6 ${getColor()}`}
                 style={{
                   color: wifiStatus === "ok" ? 'greenyellow' :
@@ -247,7 +247,7 @@ export default function Navbar() {
                 {wifiStatus === "offline" && "Sin conexión"}
                 {wifiStatus === "checking" && "Verificando..."}
               </span>
-            </div>
+            </div>*/}
 
             <div className="d-flex flex-row align-items-center pe-0 me-0">
               <span className="menu-bars m-0" style={{ cursor: "pointer" }}>
