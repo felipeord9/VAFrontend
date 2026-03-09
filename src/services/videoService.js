@@ -29,6 +29,19 @@ export const sendVideo = async(formData) =>{
   }
 }
 
+export const uploadVideoToServer = async(formData) =>{
+  try {
+    const {data}= await axios.post(`${url}/from/camera`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
 export const sendVideoQr = async(formData) =>{
   try {
     const {data}= await axios.post(`${url}/qr/record`, formData, {

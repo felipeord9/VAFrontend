@@ -269,7 +269,7 @@ export default function Navbar() {
               onClick={(e) => setShowSidebar(!showSideBar)}
               style={{userSelect:'none'}}
             >
-              {(user.role === 'admin' || user.role === 'supervisor' || user.role === 'creador') &&
+              {/* {(user.role === 'admin' || user.role === 'supervisor' || user.role === 'creador') &&
                 <li className="nav-text">
                   <Link
                     onClick={(e)=>openModalNew(e)}  
@@ -279,7 +279,7 @@ export default function Navbar() {
                     <span>Nuevo registro</span>
                   </Link>
                 </li>
-              }
+              } */}
               {NavBarData.map((item, index) => {
                 if (item.access.includes(user.role)) {
                   return (

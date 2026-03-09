@@ -53,9 +53,29 @@ export const findOneRecord = async (id) => {
   return data
 }
 
+export const findOneByPlate = async (placa) => {
+  const token = JSON.parse(localStorage.getItem("token"))
+  const { data } = await axios.get(`${url}/search/placa/${placa}`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
+  return data
+}
+
 export const verifyPlate = async (id) => {
   const token = JSON.parse(localStorage.getItem("token"))
   const { data } = await axios.get(`${url}/placa/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
+  return data
+}
+
+export const validateStatus = async (id) => {
+  const token = JSON.parse(localStorage.getItem("token"))
+  const { data } = await axios.get(`${url}/status/plate/${id}`, {
     headers: {
       Authorization: `Bearer ${token}`
     }

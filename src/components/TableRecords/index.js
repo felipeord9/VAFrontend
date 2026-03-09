@@ -3,7 +3,7 @@ import DataTable from "react-data-table-component";
 import AuthContext from "../../context/authContext";
 import ModalVerifyBalance from "../ModalVerifyBalance";
 import FormControlLabel from '@mui/material/FormControlLabel';
-import { updateRecord } from "../../services/recordService";
+import { updateRecord, validateStatus } from "../../services/recordService";
 import { Modal , Button , Form } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import Checkbox from '@mui/material/Checkbox';
@@ -33,28 +33,55 @@ function TableRecords({ records, getAllRecords, loading }) {
   const navigate = useNavigate();
 
   //funcion para abrir el modal y darle los valores de la fila
-  const handleRowClicked = (row) => {
+  const handleRowClicked = async (row) => {
     setSelectedRow(row);
-    if(row.initialVideo && row.finalVideo){
-      if(user.role === 'admin' || user.role === 'supervisor'){
-        navigate(`/view/register/${row.id}`)
-      }
-    }else if(row.initialVideo && row.finalVideo === null){
-      navigate(`/end/record/${row.id}`)
-    }else if(row.status === 'No realizado'){
-      Swal.fire({
-        title: "No realizado",
-        confirmButtonText: "Aceptar",
-        html: row.motivo
-          ? row.motivo
-            .split("\n")
-            .map((elem) => `<p style="font-size: 15px; margin: 0;"><strong>Motivo:</strong> ${elem}</p>`)
-            .join("")
-          : "Sin Información",
+    await validateStatus(row.id)
+    .then(({data})=>{
+      if(data.status !== row.status){
+        Swal.fire({
+          icon:'warning',
+          title:'¡ATENCION',
+          text:'Este registro ha cambiado de estado. Verifica en la botácora principal y vuelve a intentarlo.',
+          showConfirmButton: true,
         })
-    }else{
-      navigate(`/start/record/${row.id}`)
-    }
+        .then(()=>{
+          window.location.reload();
+        })
+      }else{
+        Swal.fire({
+          title: "No realizado",
+          confirmButtonText: "Aceptar",
+          html: row.motivo
+            ? row.motivo
+              .split("\n")
+              .map((elem) => `<p style="font-size: 15px; margin: 0;"><strong>Motivo:</strong> ${elem}</p>`)
+              .join("")
+            : "Sin Información",
+          })
+      }
+    })
+    .catch(()=>{
+      if(row.initialVideo && row.finalVideo){
+        if(user.role === 'admin' || user.role === 'supervisor'){
+          navigate(`/view/register/${row.id}`)
+        }
+      }else if(row.initialVideo && row.finalVideo === null){
+        navigate(`/end/record/${row.id}`)
+      }else if(row.status === 'No realizado'){
+        Swal.fire({
+          title: "No realizado",
+          confirmButtonText: "Aceptar",
+          html: row.motivo
+            ? row.motivo
+              .split("\n")
+              .map((elem) => `<p style="font-size: 15px; margin: 0;"><strong>Motivo:</strong> ${elem}</p>`)
+              .join("")
+            : "Sin Información",
+          })
+      }else{
+        navigate(`/start/record/${row.id}`)
+      }
+    })
   };
 
   //logica para saber si se esta visualizando en un celular

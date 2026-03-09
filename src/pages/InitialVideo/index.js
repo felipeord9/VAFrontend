@@ -5,21 +5,38 @@ import { findOneRecord , updateRecord, verifyPlate } from '../../services/record
 import AuthContext from "../../context/authContext";
 import { BsFillSendCheckFill } from "react-icons/bs";
 import { MdOutlineArrowBack } from "react-icons/md";
-import { sendVideo } from '../../services/videoService';
+import { sendVideo, uploadVideoToServer } from '../../services/videoService';
 import { userLogin } from '../../services/authService';
 import InputPassword from '../../components/InputPassword';
-import { Modal , Button , Form } from "react-bootstrap";
+import { Modal , Form } from "react-bootstrap";
 import { BiReset } from "react-icons/bi";
 import Guia from "../../assets/guia2.png";
 import Guia2 from "../../assets/guia6.png";
 import Swal from 'sweetalert2';
 import './styles.css'
 import { findInstaladores } from '../../services/userService';
+import { styled } from '@mui/material/styles';
+import Button from '@mui/material/Button';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
+
+const VisuallyHiddenInput = styled('input')({
+  clip: 'rect(0 0 0 0)',
+  clipPath: 'inset(50%)',
+  height: 1,
+  overflow: 'hidden',
+  position: 'absolute',
+  bottom: 0,
+  left: 0,
+  whiteSpace: 'nowrap',
+  width: 1,
+});
 
 export default function InitialVideo() {
   const { user , setUser } = useContext(AuthContext);
   const [recording, setRecording] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [previewVideoUpload, setPreviewVideoUpload] = useState(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [timerInterval, setTimerInterval] = useState(null);
   const [email, setEmail] = useState("");
@@ -28,6 +45,30 @@ export default function InitialVideo() {
   const [reject, setReject] = useState(false);
   const selectRefInstalador = useRef();
   const [users, setUsers] = useState([]);
+  const [isFileUploaded, setIsFileUploaded] = React.useState(false)
+  const [selectedFile, setSelectedFile] = useState(null);
+  const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB en bytes
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    
+    if (file) {
+      if(file.size > MAX_FILE_SIZE){
+        alert('El video es demasiado pesado (Máximo 100MB). Graba uno más corto.')
+      }else{
+        // Si hay archivos, actualizamos el estado a cargado
+        setIsFileUploaded(true)
+        setSelectedFile(file);
+        const url = URL.createObjectURL(file);
+        setPreviewVideoUpload(url);
+        console.log('Files uploaded:', file)
+      }
+    } else {
+      setIsFileUploaded(false)
+    }
+
+    e.target.value = ''
+  }
 
   const navigate = useNavigate();
 
@@ -523,6 +564,308 @@ export default function InitialVideo() {
       }
     };
 
+  const videoFromPhone = async (e) => {
+      e.preventDefault();
+      setRecording(true);
+      if(selectedFile){
+        Swal.fire({
+          icon:'question',
+          title:'Confirmación',
+          text:'¿Estás segur@ de querer registrar este vídeo?',
+          showConfirmButton:true,
+          confirmButtonColor:'green',
+          confirmButtonText:'Si',
+          showDenyButton: true,
+          denyButtonColor:'red',
+        })
+        .then ( async ({isConfirmed, isDenied})=>{
+          if(isConfirmed){
+            Swal.fire({
+              title:'Verificando señal...',
+              text:'Espere un momento por favor.',
+              showConfirmButton: false
+            })
+            const avgLatency = await pingServer();
+            if (avgLatency.avg < 200 && avgLatency.status === 'ok') {
+              // Muestra la barra de carga
+              let timerInterval;
+              Swal.fire({
+                  title: '¡Señal buena!',
+                  text: 'Por favor, espera mientras se registra...',
+                  allowOutsideClick: false,
+                  didOpen: () => {
+                      Swal.showLoading();
+                  },
+                  willClose: () => {
+                      clearInterval(timerInterval);
+                  },
+                  onBeforeOpen: () => {
+                      Swal.showLoading();
+                  },
+                  showConfirmButton: false,
+              });
+
+              verifyPlate(info.id)
+              .then(async()=>{
+                const formData = new FormData();
+                // IMPORTANTE: El orden de los campos
+                formData.append('placa', info.placa.toUpperCase());
+                formData.append('concept', 'Salida');
+                formData.append('createdAt', new Date().toISOString().split("T")[0]);
+                formData.append('video', selectedFile);          
+                await uploadVideoToServer(formData)
+                .then(() =>{
+                  setPreviewVideoUpload(null);
+                  setSelectedFile(null);
+                  setIsFileUploaded(false);
+                  setPreviewUrl(null);
+                  setElapsedTime(0);
+              
+                  const body = {
+                    finalVideo: 1,
+                    finalCreatedBy: user.name,
+                    finalDate: new Date(),
+                    status: 'Finalizado'
+                  }
+              
+                  updateRecord(info.id, body)
+                  .then(()=>{
+                    setRecording(false);
+                    Swal.fire({
+                      title:'¡Felicitades!',
+                      text:'Se ha registrado y guardado el vídeo de salida de manera satisfactoria.',
+                      showConfirmButton: true,
+                      confirmButtonColor:'green',
+                    })
+                    setInfo({});
+                    navigate('/records')
+                  })
+                  .catch(()=>{
+                    setRecording(false);
+                    Swal.fire({
+                      title:'¡ERROR!',
+                      text:'Ha ocurrido un error al momento de hacer el registro. Intentalo de nuevo. Si el problema persiste comunícate con el programador.',
+                      showConfirmButton: true,
+                      confirmButtonColor:'green',
+                    })
+                  })
+                })
+                .catch(()=>{
+                  setRecording(false);
+                  Swal.fire({
+                    icon:'warning',
+                    title:'¡ERROR!',
+                    text:'Ha ocurrido un error al momento de guarda el vídeo. Intentalo de nuevo. Si el problema persiste comunícate con el programador.',
+                    showConfirmButton: true,
+                    confirmButtonColor:'red',
+                  })
+                })
+              })
+              .catch(async()=>{
+                const formData = new FormData();
+                // IMPORTANTE: El orden de los campos
+                formData.append('placa', info.placa.toUpperCase());
+                formData.append('concept', 'Entrada');
+                formData.append('createdAt', new Date().toISOString().split("T")[0]);
+                formData.append('video', selectedFile);   
+                await uploadVideoToServer(formData)
+                .then(() =>{
+                  setPreviewVideoUpload(null);
+                  setSelectedFile(null);
+                  setIsFileUploaded(false);
+                  setPreviewUrl(null);
+                  setElapsedTime(0);
+              
+                  const body = {
+                    initialVideo: 1,
+                    initialCreatedBy: user.name,
+                    initalDate: new Date(),
+                  }
+              
+                  updateRecord(info.id, body)
+                  .then(()=>{
+                    setRecording(false);
+                    Swal.fire({
+                      title:'¡Felicitades!',
+                      text:'Se ha registrado y guardado el vídeo de entrada de manera satisfactoria.',
+                      showConfirmButton: true,
+                      confirmButtonColor:'green',
+                    })
+                    setInfo({});
+                    navigate('/records')
+                  })
+                  .catch(()=>{
+                    setRecording(false);
+                    Swal.fire({
+                      title:'¡ERROR!',
+                      text:'Ha ocurrido un error al momento de hacer el registro. Intentalo de nuevo. Si el problema persiste comunícate con el programador.',
+                      showConfirmButton: true,
+                      confirmButtonColor:'green',
+                    })
+                  })
+                })
+                .catch(()=>{
+                  setRecording(false);
+                  Swal.fire({
+                    icon:'warning',
+                    title:'¡ERROR!',
+                    text:'Ha ocurrido un error al momento de guarda el vídeo. Intentalo de nuevo. Si el problema persiste comunícate con el programador.',
+                    showConfirmButton: true,
+                    confirmButtonColor:'red',
+                  })
+                })
+              })
+
+            } else if (avgLatency.avg < 750 && avgLatency.status === 'regular') {
+              // Muestra la barra de carga
+              let timerInterval;
+              Swal.fire({
+                  icon:'warning',
+                  title: '¡Señal regular!',
+                  text: 'Conexión regular, es posible falle el proceso, pero Se continuará a realizar el registro...',
+                  allowOutsideClick: false,
+                  didOpen: () => {
+                      Swal.showLoading();
+                  },
+                  willClose: () => {
+                      clearInterval(timerInterval);
+                  },
+                  onBeforeOpen: () => {
+                      Swal.showLoading();
+                  },
+                  showConfirmButton: false,
+              });
+              verifyPlate(info.id)
+              .then(async()=>{
+                const formData = new FormData();
+                // IMPORTANTE: El orden de los campos
+                formData.append('placa', info.placa.toUpperCase());
+                formData.append('concept', 'Salida');
+                formData.append('createdAt', new Date().toISOString().split("T")[0]);
+                formData.append('video', selectedFile);             
+                await uploadVideoToServer(formData)
+                .then(() =>{
+                  setPreviewVideoUpload(null);
+                  setSelectedFile(null);
+                  setIsFileUploaded(false);
+                  setPreviewUrl(null);
+                  setElapsedTime(0);
+              
+                  const body = {
+                    finalVideo: 1,
+                    finalCreatedBy: user.name,
+                    finalDate: new Date(),
+                    status: 'Finalizado'
+                  }
+              
+                  updateRecord(info.id, body)
+                  .then(()=>{
+                    setRecording(false);
+                    Swal.fire({
+                      title:'¡Felicitades!',
+                      text:'Se ha registrado y guardado el vídeo de salida de manera satisfactoria.',
+                      showConfirmButton: true,
+                      confirmButtonColor:'green',
+                    })
+                    setInfo({});
+                    navigate('/records')
+                  })
+                  .catch(()=>{
+                    setRecording(false);
+                    Swal.fire({
+                      title:'¡ERROR!',
+                      text:'Ha ocurrido un error al momento de hacer el registro. Intentalo de nuevo. Si el problema persiste comunícate con el programador.',
+                      showConfirmButton: true,
+                      confirmButtonColor:'green',
+                    })
+                  })
+                })
+                .catch(()=>{
+                  setRecording(false);
+                  Swal.fire({
+                    icon:'warning',
+                    title:'¡ERROR!',
+                    text:'Ha ocurrido un error al momento de guarda el vídeo. Intentalo de nuevo. Si el problema persiste comunícate con el programador.',
+                    showConfirmButton: true,
+                    confirmButtonColor:'red',
+                  })
+                })
+              })
+              .catch(async()=>{
+                const formData = new FormData();
+                // IMPORTANTE: El orden de los campos
+                formData.append('placa', info.placa.toUpperCase());
+                formData.append('concept', 'Entrada');
+                formData.append('createdAt', new Date().toISOString().split("T")[0]);
+                formData.append('video', selectedFile);            
+                await uploadVideoToServer(formData)
+                .then(() =>{
+                  setPreviewVideoUpload(null);
+                  setSelectedFile(null);
+                  setIsFileUploaded(false);
+                  setPreviewUrl(null);
+                  setElapsedTime(0);
+              
+                  const body = {
+                    initialVideo: 1,
+                    initialCreatedBy: user.name,
+                    initalDate: new Date(),
+                  }
+              
+                  updateRecord(info.id, body)
+                  .then(()=>{
+                    setRecording(false);
+                    Swal.fire({
+                      title:'¡Felicitades!',
+                      text:'Se ha registrado y guardado el vídeo de entrada de manera satisfactoria.',
+                      showConfirmButton: true,
+                      confirmButtonColor:'green',
+                    })
+                    setInfo({});
+                    navigate('/records')
+                  })
+                  .catch(()=>{
+                    setRecording(false);
+                    Swal.fire({
+                      title:'¡ERROR!',
+                      text:'Ha ocurrido un error al momento de hacer el registro. Intentalo de nuevo. Si el problema persiste comunícate con el programador.',
+                      showConfirmButton: true,
+                      confirmButtonColor:'green',
+                    })
+                  })
+                })
+                .catch(()=>{
+                  setRecording(false);
+                  Swal.fire({
+                    icon:'warning',
+                    title:'¡ERROR!',
+                    text:'Ha ocurrido un error al momento de guarda el vídeo. Intentalo de nuevo. Si el problema persiste comunícate con el programador.',
+                    showConfirmButton: true,
+                    confirmButtonColor:'red',
+                  })
+                })
+              })
+            } else {
+              Swal.fire({
+                icon:'warning',
+                title:'Señal mala',
+                text:'Alta probabilidad de error en el registro, NO se continuará con el proceso. Revisa tu conexión y vuelve a intentarlo.'
+              })
+            }
+          }
+        })
+      } else {
+        setRecording(false);
+        Swal.fire({
+          icon:'warning',
+          title:'¡ATENCION!',
+          text:'Por favor sube el vídeo de entrada para poder hacer el registro.',
+          showConfirmButton: true,
+          confirmButtonColor:'red',
+        })
+      }
+    };
+
   /* logica del modal */
   const [modal, setModal] = useState(false);
   const closeModal = () => {
@@ -665,9 +1008,34 @@ export default function InitialVideo() {
                 </div>
               </div>
             </div> 
-            <label className="fw-bold mt-2" style={{fontSize: isMobile ? 14 : 15}}>Grabación de vídeo entrada:</label>
+            {(user.role === 'admin' || user.role === 'supervisor') ?
+              <div className={`row row-cols-sm-2 mt-2 mb-2 justify-content-between`}>
+                <label className="fw-bold mt-2" style={{fontSize: isMobile ? 14 : 15}}>Grabación de vídeo entrada:</label>
+                <Button
+                  component="label"
+                  role={undefined}
+                  variant="contained"
+                  className={`${isMobile ? 'w-10' : 'w-25'} me-2`}                  
+                  color={isFileUploaded ? 'success' : 'primary'}
+                  startIcon={isFileUploaded ? <CheckCircleOutlineIcon /> : <CloudUploadIcon />}
+                >
+                  {isFileUploaded ? 'Archivo cargado' : 'Subir Vídeo'}
+                  <VisuallyHiddenInput
+                    type="file"
+                    onChange={(e)=>handleFileChange(e)}
+                    accept="video/mp4,video/x-m4v,video/*"
+                  />
+                </Button>
+                {/* <input 
+                  type="file" 
+                  accept="video/mp4,video/x-m4v,video/*" 
+                /> */}
+              </div>
+              :
+              <label className="fw-bold mt-2" style={{fontSize: isMobile ? 14 : 15}}>Grabación de vídeo entrada:</label>
+            }
             <div className='d-flex flex-column' style={{height: isMobile ? '80%' : '60vh'}}>
-            {!previewUrl && (
+            {(!previewUrl && !previewVideoUpload) && (
               <video
                 ref={videoRef}
                 autoPlay
@@ -716,7 +1084,37 @@ export default function InitialVideo() {
               </>
             )}
 
-            {!recording && !previewUrl && (
+            {(!recording && !previewUrl && selectedFile && previewVideoUpload) && (
+              <>
+                <video
+                  src={previewVideoUpload}
+                  controls
+                  className="w-full rounded border"
+                  
+                  style={{height: isMobile ? '60vh' : '60vh'}}
+                />
+                <div className={`mt-2 d-flex div-botons justify-content-center ${isMobile ? 'gap-2' : 'gap-4'} `}>
+                  <button
+                    onClick={videoFromPhone}
+                    className="bg-green-600 btn btn-sm btn-success text-black px-4 py-2 rounded"
+                  >
+                    📤 Enviar al servidor
+                  </button>
+                  <button
+                    onClick={() => {
+                      setPreviewVideoUpload(null);
+                      setSelectedFile(null);
+                      setIsFileUploaded(false);
+                    }}
+                    className="bg-gray-500 btn btn-sm btn-danger text-black px-4 py-2 rounded"
+                  >
+                    ❌ Cancelar
+                  </button>
+                </div>
+              </>
+            )}
+
+            {!recording && !previewUrl && !selectedFile && !previewVideoUpload ? (
               <div className={`mt-2 d-flex div-botons justify-content-center ${isMobile ? 'gap-2' : 'gap-4'} `}>
                 <button
                   onClick={(e)=>openModal(e)}
@@ -730,6 +1128,10 @@ export default function InitialVideo() {
                 >
                   ↩️ Salir
                 </button>
+              </div>
+            ):(
+              <div>
+
               </div>
             )}
 
