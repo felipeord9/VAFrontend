@@ -21,6 +21,9 @@ import Stack from '@mui/material/Stack';
 import InteractiveZoneDonutChart from '../../components/PieChartZones';
 import InteractiveStateBarChart from '../../components/BarChartStates';
 import InteractiveNewsDonutChart from '../../components/PieChatNews';
+import { findTypes } from '../../services/typeInstallService';
+import { FaCircle } from 'react-icons/fa';
+import Select from 'react-select';
 
 export default function Records() {
   const { user } = useContext(AuthContext);
@@ -39,6 +42,13 @@ export default function Records() {
   const [recording, setRecording] = useState(false);
   const [placa, setPlaca] = useState('');
   const [zona, setZona] = useState('');
+  const [typeInstall, setTypeInstall] = useState('');
+  const [types, setTypes] = useState([]);
+  const selectTypeInstall = useRef();
+  const [entyInfo, setEntyInfo] = useState(false);
+  const options = types
+    .sort((a, b) => a.id - b.id)
+    .map(elem => ({ value: elem.description, label: elem.description }));
   const selectRefInstalador = useRef();
   const [users, setUsers] = useState([]);
   const [reportes, setReportes] = useState(false);
@@ -48,7 +58,9 @@ export default function Records() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    getAllUsers()
+    getAllUsers();
+    findTypes()
+    .then(({data})=>{ setTypes(data) });
   }, []);
   
   const getAllUsers = () => {
@@ -79,14 +91,14 @@ export default function Records() {
   };
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setRecording(true);
-    if(placa !== '' && zona !== ''){
+    if(placa !== '' && zona !== '' && typeInstall !== ''){
+      setRecording(true);
       const { data } = await findOneByPlate(placa.toUpperCase())
       if(data.length > 0){
         Swal.fire({
           icon:'warning',
           title:'¡ATENCIÓN!',
-          text:`Este vehículo fue registrado el(los) día(s) ${data.map((item)=>new Date(item.placaCreatedAt).toISOString().split("T")[0])}, ¿Qué acción desea realizar?`,
+          text:`Este vehículo ya ha sido registrado en nuestro sistema, ¿Qué acción desea realizar?`,
           showConfirmButton: true,
           confirmButtonText:'Ver historial',
           confirmButtonColor: 'grey',
@@ -118,6 +130,7 @@ export default function Records() {
             const body = {
               placa: placa.toUpperCase(),
               zone: zona.toUpperCase(),
+              typeInstall: typeInstall.toUpperCase(),
               status: 'En proceso',
               placaCreatedAt: new Date(),
             }
@@ -132,6 +145,7 @@ export default function Records() {
               })
               setPlaca('');
               setZona('');
+              setTypeInstall('');
               getRecordsPending();
             })
             .catch(()=>{
@@ -149,6 +163,7 @@ export default function Records() {
         const body = {
           placa: placa.toUpperCase(),
           zone: zona.toUpperCase(),
+          typeInstall: typeInstall.toUpperCase(),
           status: 'En proceso',
           placaCreatedAt: new Date(),
         }
@@ -163,6 +178,7 @@ export default function Records() {
           })
           setPlaca('');
           setZona('');
+          setTypeInstall('');
           getRecordsPending();
         })
         .catch(()=>{
@@ -175,6 +191,11 @@ export default function Records() {
           })
         })
       }
+    }else {
+      setEntyInfo(true)
+      setTimeout(() => {
+        setEntyInfo(false);
+      }, 5000);
     }
   }
 
@@ -385,6 +406,7 @@ export default function Records() {
       const placa = item?.placa?.toUpperCase();
       const zona = item?.zone?.toUpperCase();
       const status = item?.status?.toUpperCase();
+      const typeInstall = item.typeInstall.toUpperCase();
       const initalDate = item.initalDate !== null ? new Date(item?.initalDate).toLocaleString("es-CO") : '';
       const initialCreatedBy = item?.initialCreatedBy;
       const newsDate = item.newsDate !== null ? new Date(item?.newsDate).toLocaleString("es-CO") : '';
@@ -397,6 +419,7 @@ export default function Records() {
         'Placa': placa,
         'Zona': zona,
         'Estado': status,
+        'Tipo de vidrio': typeInstall,
         'Fecha Inicio': initalDate,
         'Instalador Inicio': initialCreatedBy,
         'Fecha Novedad': newsDate,
@@ -420,6 +443,58 @@ export default function Records() {
     saveAs(dataBlob, `${filename}.xlsx`);
   };
 
+  const exportToExcel2 = () => {
+    // 1. Preparar los metadatos del filtro
+    const filtroInfo = [
+      { 'Reporte': 'INFORME DE INSTALACIONES' },
+      { 'Reporte': 'Fecha de Generación', 'Valor': new Date().toLocaleString() },
+      { 'Reporte': 'Filtro Desde', 'Valor': filterDate.initialDate || 'N/A' },
+      { 'Reporte': 'Filtro Hasta', 'Valor': filterDate.finalDate || 'N/A' },
+      { 'Reporte': '', 'Valor': '' }, // Espacio en blanco
+    ];
+
+    // 3. Transformar datos de las tablas de resumen (Dashboard)
+    const dataResumenZonas = Object.keys(zoneStats).map(zone => ({
+      'Zona': zone,
+      'Realizado': zoneStats[zone].count,
+      'En Proceso': zoneStats[zone].sinFinal,
+      'No Realizado': zoneStats[zone].numError,
+      'Novedades': zoneStats[zone].novedad,
+      'TOTAL': zoneStats[zone].totalZone
+    }));
+
+    const dataResumenInstaladores = Object.keys(instalerStats).map(inst => ({
+      'Instalador': inst,
+      'Realizado': instalerStats[inst].count,
+      'En Proceso': instalerStats[inst].sinFinal,
+      'Novedades': instalerStats[inst].novedad,
+      'TOTAL': instalerStats[inst].totalZone
+    }));
+
+    // 4. Crear el Libro y las Hojas
+    const workbook = XLSX.utils.book_new();
+
+    // Hoja 1: Resumen (Dashboard)
+    // Agregamos primero los metadatos de fecha, luego las tablas
+    const worksheetResumen = XLSX.utils.json_to_sheet(filtroInfo, { skipHeader: true });
+    XLSX.utils.sheet_add_json(worksheetResumen, [{ a: 'RESUMEN POR ZONAS' }], { skipHeader: true, origin: 'A6' });
+    XLSX.utils.sheet_add_json(worksheetResumen, dataResumenZonas, { origin: 'A7' });
+    
+    // Añadir tabla de instaladores más abajo en la misma hoja
+    const nextRow = dataResumenZonas.length + 10;
+    XLSX.utils.sheet_add_json(worksheetResumen, [{ a: 'RESUMEN POR INSTALADORES' }], { skipHeader: true, origin: `A${nextRow}` });
+    XLSX.utils.sheet_add_json(worksheetResumen, dataResumenInstaladores, { origin: `A${nextRow + 1}` });
+
+    // 5. Añadir hojas al libro
+    XLSX.utils.book_append_sheet(workbook, worksheetResumen, "Resumen General");
+
+    // 6. Guardar archivo
+    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    const dataBlob = new Blob([excelBuffer], { type: "application/octet-stream" });
+    const filename = `Reporte_VA_${filterDate.initialDate || 'Completo'}.xlsx`;
+    saveAs(dataBlob, filename);
+  };
+
   const formatToFullTime = (ms) => {
     if (!ms || ms <= 0) return "00:00:00";
 
@@ -440,98 +515,135 @@ export default function Records() {
     return `${hDisplay}:${mDisplay}:${sDisplay}`;
   };
 
-  //calcular el tiempo promedio de instlacion por zona
+  //calcular conteo por zona 
   const calculateAveragesByZoneFull = (records) => {
-    const zones = ['VIP', 'PATIOS', 'DOMICILIO'];
+    const zones = ['VIP', 'PATIOS', 'DOMICILIO', 'TOTAL'];
     const stats = {};
 
     zones.forEach(z => {
         // Añadimos totalZone para calcular el % sobre la zona y no sobre el gran total
         stats[z] = { 
-          totalMs: 0, count: 0, 
-          numError: 0, totalZone: 0, 
-          sinFinal: 0 , average: 0, 
-          totalAverage: 0 , days: {}, 
-          totalRecords: 0
+          count: 0, numError: 0,  
+          sinFinal: 0 , novedad: 0,
+          totalZone: 0
         };
     });
 
-    records.forEach(record => {
+    suggestions.forEach(record => {
         const zoneKey = record.zone?.toUpperCase();
-        const dateKey = record.initalDate ? record.initalDate.split('T')[0] : null;
 
         if (stats[zoneKey]) {
             stats[zoneKey].totalZone += 1; // Contador total de la zona
 
             // Lógica de tiempo (solo para finalizados con fechas válidas)
-            if (record.initalDate && record.finalDate && record.status === 'Finalizado') {
-                const start = new Date(record.initalDate);
-                const end = new Date(record.finalDate);
-                const diff = end - start;
-
-                if (diff > 0) {
-                    stats[zoneKey].totalMs += diff;
-                    stats[zoneKey].count += 1;
-                }
+            if (record.finalDate && record.status === 'Finalizado') {
+              stats[zoneKey].count += 1;
+              stats['TOTAL'].count += 1;
             }
 
             // Lógica de Error
             if (record.status === 'No realizado') {
               stats[zoneKey].numError += 1;
+              stats['TOTAL'].numError += 1;
             }
-            if(!record.finalVideo && record.status !== 'No realizado'){
+            if(record.status === 'En proceso'){
               stats[zoneKey].sinFinal += 1;
+              stats['TOTAL'].sinFinal += 1;
             }
 
-            if (zones.includes(zoneKey) && dateKey) {
-              // Contar registro para ese día específico en esa zona
-              stats[zoneKey].days[dateKey] = (stats[zoneKey].days[dateKey] || 0) + 1;
-              stats[zoneKey].totalRecords += 1;            
+            if (record.news) {
+              stats[zoneKey].novedad += 1;  
+              stats['TOTAL'].novedad += 1;       
             }
+
+            stats['TOTAL'].totalZone += 1;
         }
     });
 
     const finalResults = {};
     zones.forEach(z => {
-        const avgMs = stats[z].count > 0 ? stats[z].totalMs / stats[z].count : 0;
-        
-        // Calculamos el porcentaje sobre el total de la zona
-        const errorPercentage = stats[z].totalZone > 0 
-            ? (stats[z].numError * 100) / stats[z].totalZone 
-            : 0;
-            
-        const daysArray = Object.keys(stats[z].days).map(date => ({
-            date: date,
-            count: stats[z].days[date]
-        })).sort((a, b) => new Date(a.date) - new Date(b.date)); // Ordenamos por fecha
-
-        const uniqueDaysCount = daysArray.length;
-
         finalResults[z] = {
-            rawMs: avgMs,
-            formatted: formatToFullTime(avgMs),
             count: stats[z].count,
             numError: stats[z].numError,
-            // .toFixed(2) para los 2 decimales
-            percError: errorPercentage.toFixed(2),
             sinFinal: stats[z].sinFinal,
-            average: uniqueDaysCount > 0 
-                ? (stats[z].totalRecords / uniqueDaysCount).toFixed(2) 
-                : 0,
-            totalAverage: uniqueDaysCount,
+            novedad: stats[z].novedad,
+            totalZone: stats[z].totalZone,
         };
     });
 
     return finalResults;
   };
 
+  //calcular conteo por instalador
+  const calculateStatsByUser = (userData) => {
+    // 1. Extraemos los nombres de los usuarios de la primera consulta
+    // Usamos un Set para evitar nombres duplicados y añadimos 'TOTAL'
+    const userNames = [...new Set(userData.map(u => {
+      if(u.name !== 'USUARIO'){
+        return u.name.trim().toUpperCase()
+      }
+    })), 'TOTAL'];
+    
+    const stats = {};
+
+    // 2. Inicializamos el objeto stats con los nombres de los usuarios
+    userNames.forEach(name => {
+        stats[name] = { 
+            count: 0, 
+            numError: 0,  
+            sinFinal: 0, 
+            novedad: 0,
+            totalZone: 0 // En este caso sería "total por usuario"
+        };
+    });
+
+    // 3. Procesamos las sugerencias/registros
+    suggestions.forEach(record => {
+        // Asumo que el registro tiene un campo 'userName' o 'name' para vincularlo
+        // Si el campo se llama distinto, cámbialo aquí:
+        const userKey = record.initialCreatedBy?.trim().toUpperCase(); 
+
+        if (stats[userKey]) {
+            // Lógica de Finalizados
+            if (record.initalDate && record.finalDate && record.status === 'Finalizado') {
+                stats[userKey].count += 1;
+                stats['TOTAL'].count += 1;
+            }
+
+            // Lógica de En proceso
+            if (record.status === 'En proceso' && record.initalDate) {
+                stats[userKey].sinFinal += 1;
+                stats['TOTAL'].sinFinal += 1;
+            }
+
+            // Lógica de Novedades
+            if (record.news) {
+                const valorNovedad = typeof record.news === 'number' ? record.news : 1;
+                stats[userKey].novedad += valorNovedad;
+                stats['TOTAL'].novedad += valorNovedad;
+            }
+
+            if ( record.status === 'No realizado' ){
+              return 0;
+            }
+
+            // Contador total de filas procesadas por usuario
+            stats[userKey].totalZone += 1;
+            stats['TOTAL'].totalZone += 1;
+        }
+    });
+
+    return stats;
+  };
+
   const zoneStats = useMemo(() => calculateAveragesByZoneFull(records));
+  const instalerStats = useMemo(() => calculateStatsByUser(users));
 
   return (
     <div className="d-flex flex-column container mt-5">
       {reportes ? 
-        <div className="mt-3"> 
-          <div className="row row-cols-sm-1 bg-light rounded shadow-sm">
+        <div className="mt-3 gap-2"> 
+          <div className="row row-cols-sm-1 bg-light rounded shadow-sm mt-2">
             <label style={{fontSize: isMobile ? 15 : 22, color: '#145a83'}} className='d-flex justify-content-center fw-bold'>DASHBOARD</label>
             {/* Modal del filtro */}
               <Modal show={showModal} onHide={closeModal} centered>
@@ -629,29 +741,93 @@ export default function Records() {
                   </Button>
                 </Modal.Footer>
               </Modal>
-            
-            <div className={`d-flex div-botons mt-1 w-100 ${isMobile ? 'gap-2' : 'gap-4'} ${isMobile ? 'mx-0' : 'px-2'}`}>
+            <div className={`d-flex div-botons justify-content-center mt-1 w-100 ${isMobile ? 'gap-2' : 'gap-4'} ${isMobile ? 'mx-0' : 'px-2'}`}>
+              <div className={`${isMobile ? 'd-flex flex-column gap-2' : 'd-flex flex-row gap-4'}`}>
+                <div className='d-flex flex-row'>
+                  <label className='me-2 mt-1'>Desde:</label>
+                  <input
+                    id="initialDate"
+                    type="date"
+                    value={filterDate.initialDate}
+                    className="form-control form-control-sm"
+                    max={filterDate.finalDate !== '' ? filterDate.finalDate : new Date().toISOString().split("T")[0]}
+                    onChange={handleChangeFilterDate}
+                  />
+                </div>
+                <div className='d-flex flex-row '>
+                  <label className='me-2 mt-1'>Hasta:</label>
+                  <input
+                    id="finalDate"
+                    type="date"
+                    value={filterDate.finalDate}
+                    className="form-control form-control-sm"
+                    min={filterDate.initialDate}
+                    max={new Date().toISOString().split("T")[0]}
+                    onChange={handleChangeFilterDate}
+                    disabled={filterDate.initialDate === '' ? true : false}
+                  />
+                </div>
+              </div> 
               <button
                 className="btn btn-sm btn-primary d-flex justify-content-center "
-                style={{width:isMobile ? '100%': user.role === 'usuario' ? '100%' : '50%'}}
-                onClick={openModal}
+                style={{width:isMobile && '100%'}}
+                onClick={(e)=>completeSearch(e)/* openModal */}
               >
                 <FaIcons.FaFilter className='mt-1 me-1'/>
                 Filtrar
               </button>
               <button 
-                className='btn btn-sm btn-success d-flex justify-content-center' 
-                style={{width:isMobile ? '100%':'50%'}}
-                onClick={() => exportToExcel(suggestions)}
+                className='btn btn-sm btn-danger' 
+                onClick={(e)=>(removeFilterDate(e))}
               >
-                <SiMicrosoftexcel className='mt-1 me-1'/>
-                Exportar
+                Borrar filtro
               </button>
             </div> 
 
             {/* Diagramas individuales */}
-            <div className={`row row-cols-sm-3 ${isMobile ? 'mt-1' : 'mt-3'}`}>
-              <div
+            <div className={`d-flex flex-column gap-3`}>
+              {/* tabla cuantificadora */}
+                <div className={`${isMobile ? 'd-flex flex-column mt-2' : 'd-flex align-items-between justify-content-between mt-2'}`}>
+                  <h6 className='fw-bold'>Conteo por Zona</h6>
+                  <button 
+                    className='btn btn-sm btn-success d-flex justify-content-center' 
+                    style={{width:isMobile ? '100%':'15%'}}
+                    onClick={() => exportToExcel2(suggestions)}
+                  >
+                    <SiMicrosoftexcel className='mt-1 me-1'/>
+                    Exportar
+                  </button>
+                </div>
+              <div className={` w-100 table-responsive mb-3 rounded`}>
+                <table className="table table-bordered table-hover align-middle text-center m-0 caption-top" style={{fontSize:13}}>
+                  <thead className="table-light">
+                    <tr className=''>
+                      <th className="diagonal-header p-0">
+                        <span className="abajo">Zona</span>
+                        <span className="arriba">Estado</span>
+                      </th>
+                      <th>✅ Realizado</th>
+                      <th>🟡 En proceso</th>
+                      <th>❌ No realizado</th>
+                      <th><FaCircle style={{ color: '#007bff', marginRight: '8px', fontSize: '0.8em' }} /> Novedad</th>
+                      <th style={{backgroundColor:'whitesmoke'}}>TOTAL</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.keys(zoneStats).map(zone => (
+                        <tr key={zone} style={{ borderBottom: '1px solid #eee' }}>
+                            <td className='fw-bold'>{zone}</td>
+                            <td>{zoneStats[zone].count}</td>
+                            <td >{zoneStats[zone].sinFinal}</td>
+                            <td >{zoneStats[zone].numError}</td>
+                            <td >{zoneStats[zone].novedad}</td>
+                            <td style={{backgroundColor:'whitesmoke'}}>{zoneStats[zone].totalZone}</td>
+                        </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {/* <div
                 className="mt-1"
               >
                 <h6>Registros por zona</h6>
@@ -667,39 +843,41 @@ export default function Records() {
               >
                 <h6>Porcentaje de evidencias</h6>
                 <InteractiveNewsDonutChart suggestions={suggestions} selectedZone='' />
-              </div>
+              </div> */}
             </div>
           </div>
-          {/* Diagramas generales */}
-          <div className="row row-cols-sm-1 bg-light rounded shadow-sm mt-2">
-            <label style={{fontSize: isMobile ? 15 : 22, color: '#145a83'}} className='d-flex justify-content-center fw-bold'>REPORTES GENERALES</label>
-            <div className="row row-cols-sm-1">
-              <div className="table-responsive mt-2 mb-3 rounded">
+
+          {/* tabla por instalador */}
+          <div className="row row-cols-sm-1 bg-light rounded shadow-sm mt-2" style={{fontSize:13}}>
+            <h6 className='fw-bold mt-2'>Conteo por Instalador</h6>
+            <div className={` w-100 table-responsive mt-2 mb-3 rounded`}>
                 <table className="table table-bordered table-hover align-middle text-center m-0 caption-top">
                   <thead className="table-light">
-                    <tr>
-                      <th>Zona</th>
-                      <th>Tiempo promed. instalación</th>
-                      <th>Porcentaje error</th>
-                      <th>registros sin video final</th>
-                      <th>Promed. registros diarios</th>
+                    <tr className='p-0 m-0'>
+                      <th className="diagonal-header p-0" style={{width:'230px'}}>
+                        <span className="abajo">Instalador</span>
+                        <span className="arriba">Estado</span>
+                      </th>
+                      <th>✅ Realizado</th>
+                      <th>🟡 En proceso</th>
+                      {/* <th>❌ No realizado</th> */}
+                      <th><FaCircle style={{ color: '#007bff', marginRight: '8px', fontSize: '0.8em' }} /> Novedad</th>
+                      <th style={{backgroundColor:'whitesmoke'}}>TOTAL</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {Object.keys(zoneStats).map(zone => (
-                        <tr key={zone} style={{ borderBottom: '1px solid #eee' }}>
-                            <td className='fw-bold'>{zone}</td>
-                            <td style={{ fontFamily: 'monospace', fontSize: '1.1em' }}>
-                                {zoneStats[zone].formatted}
-                            </td>
-                            <td >{zoneStats[zone].percError} %</td>
-                            <td >{zoneStats[zone].sinFinal}</td>
-                            <td >{zoneStats[zone].average}</td>
+                    {Object.keys(instalerStats).map(instaler => (
+                        <tr key={instaler} style={{ borderBottom: '1px solid #eee' }}>
+                            <td className='fw-bold'>{instaler}</td>
+                            <td>{instalerStats[instaler].count}</td>
+                            <td >{instalerStats[instaler].sinFinal}</td>
+                            {/* <td >{instalerStats[instaler].numError}</td> */}
+                            <td >{instalerStats[instaler].novedad}</td>
+                            <td style={{backgroundColor:'whitesmoke'}}>{instalerStats[instaler].totalZone}</td>
                         </tr>
                     ))}
                   </tbody>
                 </table>
-              </div>
             </div>
           </div>
         </div>
@@ -885,6 +1063,58 @@ export default function Records() {
                       </option>
                     </select>
                   </div>
+                  <div className='d-flex w-100 justify-content-center mt-2'>
+                    <Select
+                      isMulti // <--- Magia: permite selección múltiple
+                      isClearable={false}
+                      options={options}
+                      placeholder="-- TIPO DE VIDRIO --"
+                      styles={{
+                        container: (base) => ({
+                          ...base,
+                          width: isMobile ? '100%' : '50%',
+                          textTransform: 'uppercase',
+                          fontSize: '13px'
+                        })
+                      }}
+                      onChange={(selectedOptions) => {
+                        // 1. Si no hay nada seleccionado, guardamos un string vacío
+                        if (!selectedOptions || selectedOptions.length === 0) {
+                          setTypeInstall(""); 
+                          return;
+                        }
+
+                        // 2. Extraemos los valores, los unimos con coma y espacio
+                        const stringResult = selectedOptions
+                          .map(option => option.value.toUpperCase()) // Opcional: asegurar mayúsculas
+                          .join(", "); 
+
+                        // 3. Guardamos el string final en el estado
+                        setTypeInstall(stringResult);
+                      }}
+                    />
+                    {/* <select
+                      ref={selectTypeInstall}
+                      className="form-select form-select-sm"
+                      style={{textTransform:'uppercase', width: isMobile ? '100%' : '50%'}}
+                      onChange={(e) => setTypeInstall(JSON.parse(e.target.value))}
+                      required
+                    >
+                      <option selected value="" disabled>
+                        -- Seleccione el tipo de instalación --
+                      </option>
+                      {types
+                        .sort((a, b) => a.id - b.id)
+                        .map((elem) => (
+                          <option id={elem.id} value={JSON.stringify(elem.description)}>
+                            {elem.description}
+                          </option>
+                        ))}
+                    </select> */}
+                  </div>
+                  {entyInfo &&
+                    <caption className='text-danger d-flex w-100 justify-content-center text-align-center'>COMPLETA LA INFORMACIÓN</caption>
+                  }
                 </Modal.Body>
                 <Modal.Footer>
                   <Button variant="success" onClick={(e)=>handleSubmit(e)}>

@@ -24,6 +24,31 @@
     transition: 1s;
 }
 
+/* Estilo para la celda diagonal */
+.diagonal-header {
+  position: relative;
+  width: 150px; /* Ajusta según necesites */
+  padding: 0 !important; /* Quitamos el padding para controlar la posición */
+  
+  /* Dibujamos la línea diagonal de esquina a esquina */
+  background: linear-gradient(to top right, transparent 49.5%, #ccc 49.5%, #ccc 50.5%, transparent 50.5%);
+}
+
+.diagonal-header span {
+  position: absolute;
+  font-weight: bold;
+}
+
+.diagonal-header .abajo {
+  bottom: 0px;
+  left: -10px;
+}
+
+.diagonal-header .arriba {
+  top: 0px;
+  right: 8px;
+}
+
 @media (max-width: 767px) {
   .reverse {
       display: flex;

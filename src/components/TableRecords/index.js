@@ -227,6 +227,7 @@ function TableRecords({ records, getAllRecords, loading }) {
       center: true,
       selector: (row) => row?.status.toUpperCase(),
       width: "130px",
+      sortable: true,
     },
     {
       id: "placa",
@@ -241,6 +242,24 @@ function TableRecords({ records, getAllRecords, loading }) {
       selector: (row) => row?.zone,
       sortable: true,
       width: isMobile ? '110px':'110px'
+    },
+    {
+      id: "typeInstall",
+      name: "Tipo de vidrio",
+      selector: (row) => (
+        <div style={{ 
+          whiteSpace: 'pre-line', // Esto permite el salto de línea real
+          lineHeight: '1.2', 
+          padding: '5px 0',
+          textTransform: 'uppercase',
+          width: '100%',
+          wordBreak: 'break-word' // Evita que palabras largas rompan la tabla
+        }}>
+          {row?.typeInstall?.replaceAll(', ', '\n')}
+        </div>
+      ),
+      sortable: true,
+      width: '165px'
     },
     {
       id: "initialVideo",
@@ -268,7 +287,21 @@ function TableRecords({ records, getAllRecords, loading }) {
     {
       id: "initalDate",
       name: "Fecha Entrada",
-      selector: (row) => row.initalDate === null ? '' : new Date(row.initalDate).toLocaleString("es-CO"),
+      selector: (row) => {
+        if(row.status && row.status.toUpperCase() === 'NO REALIZADO'){
+          if(row.placaCreatedAt === null){
+            return ''
+          }else{
+            return new Date(row?.placaCreatedAt).toLocaleString("es-CO")
+          }
+        }else{
+          if(row.initalDate === null){
+            return ''
+          }else{
+            return new Date(row.initalDate).toLocaleString("es-CO")
+          }
+        }
+      },
       sortable: true,
       width: '190px'
     },
@@ -367,9 +400,8 @@ function TableRecords({ records, getAllRecords, loading }) {
     }, */
     rows: {
       style: {
-        height:'15px', // ajusta el alto de las filas según tus necesidades
+        minHeight: '15px', // ajusta el alto de las filas según tus necesidades
         cursor:'pointer',
-        
       },
     },
     headCells: {
