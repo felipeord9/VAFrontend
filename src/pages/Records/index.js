@@ -45,6 +45,7 @@ export default function Records() {
   const [typeInstall, setTypeInstall] = useState('');
   const [types, setTypes] = useState([]);
   const selectTypeInstall = useRef();
+  const [selectedTypeInstall, setSelectedTypeInstall] = useState([]);
   const [entyInfo, setEntyInfo] = useState(false);
   const options = types
     .sort((a, b) => a.id - b.id)
@@ -125,6 +126,8 @@ export default function Records() {
               setSuggestions(filtered);
               setPlaca('');
               setZona('');
+              setSelectedTypeInstall([]);
+              setTypeInstall('');
             }
           }else if(isDenied){
             const body = {
@@ -145,6 +148,7 @@ export default function Records() {
               })
               setPlaca('');
               setZona('');
+              setSelectedTypeInstall([]);
               setTypeInstall('');
               getRecordsPending();
             })
@@ -178,6 +182,7 @@ export default function Records() {
           })
           setPlaca('');
           setZona('');
+          setSelectedTypeInstall([]);
           setTypeInstall('');
           getRecordsPending();
         })
@@ -1068,6 +1073,7 @@ export default function Records() {
                       isMulti // <--- Magia: permite selección múltiple
                       isClearable={false}
                       options={options}
+                      value={selectedTypeInstall}
                       placeholder="-- TIPO DE VIDRIO --"
                       styles={{
                         container: (base) => ({
@@ -1077,19 +1083,18 @@ export default function Records() {
                           fontSize: '13px'
                         })
                       }}
-                      onChange={(selectedOptions) => {
-                        // 1. Si no hay nada seleccionado, guardamos un string vacío
-                        if (!selectedOptions || selectedOptions.length === 0) {
-                          setTypeInstall(""); 
+                      onChange={(optionsSelected) => {
+                        setSelectedTypeInstall(optionsSelected || []);
+
+                        if (!optionsSelected || optionsSelected.length === 0) {
+                          setTypeInstall("");
                           return;
                         }
 
-                        // 2. Extraemos los valores, los unimos con coma y espacio
-                        const stringResult = selectedOptions
-                          .map(option => option.value.toUpperCase()) // Opcional: asegurar mayúsculas
-                          .join(", "); 
+                        const stringResult = optionsSelected
+                          .map(option => option.value.toUpperCase())
+                          .join(", ");
 
-                        // 3. Guardamos el string final en el estado
                         setTypeInstall(stringResult);
                       }}
                     />
