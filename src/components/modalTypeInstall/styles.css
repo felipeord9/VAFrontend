@@ -1,0 +1,7 @@
+.input-select {
+  position: absolute;
+  height: 100%;
+  width: calc(100% - 37px) !important;
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}

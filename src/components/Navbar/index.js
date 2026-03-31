@@ -14,6 +14,8 @@ import { createRecord } from "../../services/recordService";
 import Swal from "sweetalert2";
 import "./styles.css";
 import { Wifi } from "lucide-react"; // Icono de WiFi (lucide-react)
+import { GiCarDoor } from "react-icons/gi";
+import ModalTypeInstall from "../modalTypeInstall";
 
 export default function Navbar() {
   const { isLogged, logout } = useUser();
@@ -113,12 +115,12 @@ export default function Navbar() {
   }
 
   /* constantes para el modal nuevo registro */
-  const [showModalNew, setShowModalNew] = useState(false);
-  const closeModalNew = () => {
-    setShowModalNew(false);
+  const [showModalTypeIntall, setShowModalTypeIntall] = useState(false);
+  const closeModalTypeIntall = () => {
+    setShowModalTypeIntall(false);
   };
-  const openModalNew = (number) => {
-    setShowModalNew(true);
+  const openModalTypeIntall = (number) => {
+    setShowModalTypeIntall(true);
   };
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -162,62 +164,10 @@ export default function Navbar() {
           style={{ fontSize: 11, left: 0, height: "50px", zIndex: 2 , backgroundColor:'#145a83' }}
         >
 
-          {/* Modal de nuevo registro */}
-            <Modal show={showModalNew} onHide={closeModalNew} centered>
-              <Modal.Header closeButton>
-                <Modal.Title
-                  className='d-flex w-100 justify-content-center'
-                  style={{
-                    color:'#145a83'
-                  }}
-                >Nuevo registro</Modal.Title>
-              </Modal.Header>
-              <Modal.Body>
-                <label>Para llevar a cabo el nuevo registro debes ingresar la placa a continuación:</label>
-                <div className='d-flex w-100 justify-content-center mt-1'>
-                  <input
-                    type="text"
-                    value={placa}
-                    className="form-control form-control-sm shadow-sm"
-                    onChange={(e) => setPlaca(e.target.value)}
-                    style={{textTransform:'uppercase', width: isMobile ? '100%' : '50%'}}
-                    placeholder='Eje: ABC000'
-                    required
-                  />
-                </div>
-                <div className='d-flex w-100 justify-content-center mt-2'>
-                  <select
-                    className="form-select form-select-sm"
-                    value={zona}
-                    id="zona"
-                    style={{textTransform:'uppercase', width: isMobile ? '100%' : '50%'}}
-                    required
-                    onChange={(e) => setZona(e.target.value)}
-                  >
-                    <option selected value="" disabled>
-                      -- Seleccione la zona --
-                    </option>
-                    <option id="vip" value="vip">
-                      VIP
-                    </option>
-                    <option id="patios" value="patios">
-                      PATIOS
-                    </option>
-                    <option id="domicilio" value="domicilio">
-                      DOMICILIO
-                    </option>
-                  </select>
-                </div>
-              </Modal.Body>
-              <Modal.Footer>
-                <Button variant="success" onClick={(e)=>handleSubmit(e)}>
-                  {recording ? 'REGISTRANDO...' : 'Registrar'} 
-                </Button>
-                <Button variant="danger" onClick={closeModalNew}>
-                  Cerrar
-                </Button>
-              </Modal.Footer>
-            </Modal>
+          <ModalTypeInstall 
+            showModal={showModalTypeIntall}
+            setShowModal={setShowModalTypeIntall}
+          />
 
           <div className="d-flex flex-row justify-content-between align-items-center w-100 h-100 px-3 shadow">
             <div
@@ -269,17 +219,17 @@ export default function Navbar() {
               onClick={(e) => setShowSidebar(!showSideBar)}
               style={{userSelect:'none'}}
             >
-              {/* {(user.role === 'admin' || user.role === 'supervisor' || user.role === 'creador') &&
+              {(user.role === 'admin' ) &&
                 <li className="nav-text">
                   <Link
-                    onClick={(e)=>openModalNew(e)}  
+                    onClick={(e)=>openModalTypeIntall(e)}  
                     style={{backgroundColor: 'transparent', color: 'white'}}
                   >
-                    <MdNoteAdd />
-                    <span>Nuevo registro</span>
+                    <GiCarDoor />
+                    <span>Tipos de vidrios</span>
                   </Link>
                 </li>
-              } */}
+              }
               {NavBarData.map((item, index) => {
                 if (item.access.includes(user.role)) {
                   return (

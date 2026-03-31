@@ -60,14 +60,23 @@ export default function Records() {
 
   useEffect(() => {
     getAllUsers();
-    findTypes()
-    .then(({data})=>{ setTypes(data) });
+    getAllTypes();
   }, []);
   
   const getAllUsers = () => {
     findInstaladores()
       .then(({ data }) => {
         setUsers(data)
+      })
+      .catch((error) => {
+        console.log('error')
+      });
+  }
+
+  const getAllTypes = () => {
+    findTypes()
+      .then(({ data }) => {
+        setTypes(data)
       })
       .catch((error) => {
         console.log('error')
@@ -1154,7 +1163,7 @@ export default function Records() {
                   <button 
                     className='btn btn-sm btn-danger d-flex justify-content-center' 
                     style={{width:isMobile ? '100%':'50%'}}
-                    onClick={(e) => openModalNew(e)}
+                    onClick={(e) => (getAllTypes(), openModalNew(e))}
                   >
                     <MdNoteAdd className='mt-1 me-1'/>
                     Nuevo registro
