@@ -62,7 +62,7 @@ function TableRecords({ records, getAllRecords, loading }) {
     })
     .catch(()=>{
       if(row.initialVideo && row.finalVideo){
-        if(user.role === 'admin' || user.role === 'supervisor'){
+        if(user.role === 'admin' || user.role === 'supervisor' || user.role === 'creador'){
           navigate(`/view/register/${row.id}`)
         }
       }else if(row.initialVideo && row.finalVideo === null){
@@ -173,7 +173,7 @@ function TableRecords({ records, getAllRecords, loading }) {
       center: true,
       cell: (row, index, column, id) => (
         <div className='d-flex gap-2 p-1'>
-          {((user.role === 'admin' || user.role === 'supervisor') && (row.status === 'En proceso')) ? (
+          {((user.role === 'admin' || user.role === 'supervisor' || user.role === 'creador') && (row.status === 'En proceso')) ? (
             <div className="d-flex gap-2">
               <button 
                 title="Finalizar" className='btn btn-sm btn-secondary'
@@ -219,7 +219,7 @@ function TableRecords({ records, getAllRecords, loading }) {
           }
         </div>
       ),
-      width: (user.role === 'admin' || user.role === 'supervisor') ? '125px' :  '60px',
+      width: (user.role === 'admin' || user.role === 'supervisor' || user.role === 'creador') ? '125px' :  '60px',
     },
     {
       id: "state",

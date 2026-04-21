@@ -1159,7 +1159,7 @@ export default function Records() {
                     Exportar
                   </button>
                 }
-                {(user.role === 'admin' || user.role === 'supervisor' || user.role === 'creador') &&
+                {(user.role === 'admin' || user.role === 'creador') &&
                   <button 
                     className='btn btn-sm btn-danger d-flex justify-content-center' 
                     style={{width:isMobile ? '100%':'50%'}}
