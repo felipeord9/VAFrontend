@@ -47,14 +47,14 @@ export default function InitialVideo() {
   const [users, setUsers] = useState([]);
   const [isFileUploaded, setIsFileUploaded] = React.useState(false)
   const [selectedFile, setSelectedFile] = useState(null);
-  const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB en bytes
+  const MAX_FILE_SIZE = 200 * 1024 * 1024; // 100MB en bytes
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     
     if (file) {
       if(file.size > MAX_FILE_SIZE){
-        alert('El video es demasiado pesado (Máximo 100MB). Graba uno más corto.')
+        alert('El video es demasiado pesado (Máximo 200MB). Graba uno más corto.')
       }else{
         // Si hay archivos, actualizamos el estado a cargado
         setIsFileUploaded(true)
@@ -228,6 +228,7 @@ export default function InitialVideo() {
         facingMode: { ideal: 'environment' },
         /* width: { ideal : '100%' },
         height: { ideal : '100%' }  */
+        frameRate: { ideal: 30, max: 30 } // Limitar a 30 cuadros por segundo
       },
       audio: true,
     });
@@ -238,7 +239,18 @@ export default function InitialVideo() {
     // Intenta activar el flash
     enableTorch(stream);
 
-    mediaRecorderRef.current = new MediaRecorder(stream);
+    const options = { 
+      mimeType: 'video/webm;codecs=vp8,opus',
+      videoBitsPerSecond: 1000000 // 1 Mbps (puedes probar con 800000 para comprimir más)
+    };
+
+    /* mediaRecorderRef.current = new MediaRecorder(stream); */
+    try {
+      mediaRecorderRef.current = new MediaRecorder(stream, options);
+    } catch (e) {
+      mediaRecorderRef.current = new MediaRecorder(stream); // Fallback por seguridad
+    }
+    
     recordedChunks.current = [];
 
     mediaRecorderRef.current.ondataavailable = (event) => {
